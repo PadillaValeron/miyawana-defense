@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://b8qxac02rxawl"]
+
+[ext_resource type="PackedScene" uid="uid://d4k0qor3g3cfb" path="res://scenes/entities/Hunter.tscn" id="1_m0445"]
+[ext_resource type="Resource" uid="uid://blw8wuixlmoib" path="res://data/Generic_hunter.tres" id="2_jia5p"]
+
+[node name="CombatArena" type="Node2D" unique_id=1309124301]
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=676275904]
+offset_left = -6.0
+offset_top = 952.0
+offset_right = 3007.0
+offset_bottom = 992.0
+
+[node name="Hunter" parent="." unique_id=360664571 instance=ExtResource("1_m0445")]
+position = Vector2(94, 952)
+data = ExtResource("2_jia5p")
