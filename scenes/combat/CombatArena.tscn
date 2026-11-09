@@ -12,5 +12,5 @@ offset_right = 3007.0
 offset_bottom = 992.0
 
 [node name="Hunter" parent="." unique_id=360664571 instance=ExtResource("1_m0445")]
-position = Vector2(94, 952)
+position = Vector2(1125, 952)
 data = ExtResource("2_jia5p")

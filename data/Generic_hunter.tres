@@ -6,6 +6,7 @@
 
 [resource]
 script = ExtResource("1_bflsi")
+move_speed = 200.0
 texture_idle = ExtResource("4_emut5")
 texture_hit = ExtResource("3_ijuco")
 texture_dead = ExtResource("3_ijuco")
