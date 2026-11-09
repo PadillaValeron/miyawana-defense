@@ -132,6 +132,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_SPACE:
 			take_damage(20.0)
 		elif event.keycode == KEY_B:
-			take_heavy_hit(90.0) # ¡Guarrapazo con retroceso!
+			take_heavy_hit(90.0) # hit with knockback!
 		elif event.keycode == KEY_K:
 			die()
