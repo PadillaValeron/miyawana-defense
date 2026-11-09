@@ -104,6 +104,8 @@ class_name MonsterData extends Resource
 @export_group("Elemental Resistances")
 @export var elemental_weakness: Dictionary # {"Fire": 1.5, "Water": 0.5}
 
+```
+
 4.2 State Machine & Hit Dispatching
 
 Entities manage physics and visuals via strict finite states (IDLE_WALK, ACTING,
