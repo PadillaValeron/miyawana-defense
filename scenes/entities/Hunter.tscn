@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://blktjk44lqx8t" path="res://assets/sprites/hunters/generic_hunter/generic_hunter_idle.png" id="1_boh44"]
 [ext_resource type="Script" uid="uid://crg6fv1buvft0" path="res://scenes/entities/hunter.gd" id="1_dx2mb"]
 
-[node name="Hunter" type="Node2D" unique_id=360664571]
+[node name="Hunter" type="Node2D" unique_id=360664571 groups=["hunters"]]
 script = ExtResource("1_dx2mb")
 
 [node name="VisualRoot" type="Node2D" parent="." unique_id=1204801862]

@@ -186,21 +186,32 @@ func find_closest_monster() -> Node2D:
 # ==============================================================================
 
 func order_offensive() -> void:
+	if current_command == CommandState.OFFENSIVE:
+		return
+	
 	current_command = CommandState.OFFENSIVE
 	focus_target = null
 	current_target = null # Forces re-evaluating targets
 
 func order_retreat() -> void:
+	if current_command == CommandState.RETREAT:
+		return
+	
 	current_command = CommandState.RETREAT
 	current_target = null
 	focus_target = null
 	has_reached_gate = false # Must reach the gate first!
 
 func order_focus(target: Node2D) -> void:
-	if is_instance_valid(target):
-		current_command = CommandState.FOCUS
-		focus_target = target
-		current_target = target
+	if current_command == CommandState.FOCUS and focus_target == target:
+		return
+	
+	if not is_instance_valid(target):
+		return
+	
+	current_command = CommandState.FOCUS
+	focus_target = target
+	current_target = target
 
 # ==============================================================================
 # PROCEDURAL ATTACK ANIMATION

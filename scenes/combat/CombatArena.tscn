@@ -1,30 +1,127 @@
 [gd_scene format=3 uid="uid://b8qxac02rxawl"]
 
 [ext_resource type="PackedScene" uid="uid://d4k0qor3g3cfb" path="res://scenes/entities/Hunter.tscn" id="1_m0445"]
+[ext_resource type="Script" uid="uid://hwx2jk87dsbv" path="res://scenes/combat/CombatArena.gd" id="1_tr5ew"]
 [ext_resource type="Resource" uid="uid://blw8wuixlmoib" path="res://data/Generic_hunter.tres" id="2_jia5p"]
+[ext_resource type="Resource" uid="uid://xdadqcx6x80s" path="res://data/Kisaki.tres" id="3_7tyy2"]
 [ext_resource type="PackedScene" uid="uid://c7bfoem5mow2w" path="res://scenes/entities/TrainingDummy.tscn" id="3_cr5mo"]
 [ext_resource type="Texture2D" uid="uid://b4ksf5eja000c" path="res://assets/sprites/monsters/dummy/dummy_idle.png" id="4_ulwyh"]
 [ext_resource type="Texture2D" uid="uid://bxxv32lvtjmv0" path="res://assets/sprites/monsters/dummy/dummy_hurt.png" id="5_qrj8j"]
+[ext_resource type="PackedScene" uid="uid://c0nkriq1vwfk7" path="res://scenes/ui/HunterPortrait.tscn" id="8_k76re"]
 
 [node name="CombatArena" type="Node2D" unique_id=1309124301]
+script = ExtResource("1_tr5ew")
 
-[node name="ColorRect" type="ColorRect" parent="." unique_id=676275904]
-offset_left = -6.0
-offset_top = 952.0
-offset_right = 3007.0
-offset_bottom = 992.0
+[node name="Environment" type="Node2D" parent="." unique_id=8641394]
 
-[node name="Hunter" parent="." unique_id=360664571 instance=ExtResource("1_m0445")]
-position = Vector2(1438, 955)
+[node name="ColorRect" type="ColorRect" parent="Environment" unique_id=676275904]
+offset_left = -2.0
+offset_top = 912.0
+offset_right = 5269.0
+offset_bottom = 1096.0
+
+[node name="Entities" type="Node2D" parent="." unique_id=1428207984]
+
+[node name="Hunters" type="Node2D" parent="Entities" unique_id=840522750]
+
+[node name="Hunter2" parent="Entities/Hunters" unique_id=360664571 instance=ExtResource("1_m0445")]
+position = Vector2(1289, 917)
+data = ExtResource("3_7tyy2")
+guard_leash_range = 1000.0
+
+[node name="Hunter" parent="Entities/Hunters" unique_id=1037081318 instance=ExtResource("1_m0445")]
+position = Vector2(2166, 915)
 data = ExtResource("2_jia5p")
 guard_leash_range = 1000.0
 
-[node name="TrainingDummy" parent="." unique_id=1762278640 instance=ExtResource("3_cr5mo")]
-position = Vector2(1968, 951)
+[node name="Monsters" type="Node2D" parent="Entities" unique_id=262223133]
+
+[node name="TrainingDummy" parent="Entities/Monsters" unique_id=1762278640 instance=ExtResource("3_cr5mo")]
+position = Vector2(1968, 911)
 texture_idle = ExtResource("4_ulwyh")
 texture_hit = ExtResource("5_qrj8j")
 
-[node name="TrainingDummy2" parent="." unique_id=208584686 instance=ExtResource("3_cr5mo")]
-position = Vector2(627, 951)
+[node name="TrainingDummy2" parent="Entities/Monsters" unique_id=208584686 instance=ExtResource("3_cr5mo")]
+position = Vector2(627, 911)
 texture_idle = ExtResource("4_ulwyh")
 texture_hit = ExtResource("5_qrj8j")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1164938157]
+position = Vector2(1352, 360)
+zoom = Vector2(0.5, 0.5)
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=953712362]
+
+[node name="UIRoot" type="Control" parent="HUD" unique_id=1462614516]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopLeft" type="MarginContainer" parent="HUD/UIRoot" unique_id=1448388879]
+layout_mode = 1
+offset_right = 40.0
+offset_bottom = 40.0
+mouse_filter = 0
+
+[node name="SquadPortraits" type="HBoxContainer" parent="HUD/UIRoot/TopLeft" unique_id=289199964]
+layout_mode = 2
+
+[node name="HunterPortrait" parent="HUD/UIRoot/TopLeft/SquadPortraits" unique_id=99875371 node_paths=PackedStringArray("target_hunter") instance=ExtResource("8_k76re")]
+layout_mode = 2
+target_hunter = NodePath("../../../../../Entities/Hunters/Hunter")
+
+[node name="HunterPortrait2" parent="HUD/UIRoot/TopLeft/SquadPortraits" unique_id=1076058377 node_paths=PackedStringArray("target_hunter") instance=ExtResource("8_k76re")]
+layout_mode = 2
+target_hunter = NodePath("../../../../../Entities/Hunters/Hunter2")
+
+[node name="TopRight" type="MarginContainer" parent="HUD/UIRoot" unique_id=249311602]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 0
+
+[node name="BottomLeft" type="MarginContainer" parent="HUD/UIRoot" unique_id=1434239477]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+offset_right = 40.0
+grow_vertical = 0
+mouse_filter = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD/UIRoot/BottomLeft" unique_id=1493730337]
+layout_mode = 2
+
+[node name="Offense" type="Button" parent="HUD/UIRoot/BottomLeft/HBoxContainer" unique_id=1291083278]
+layout_mode = 2
+text = "Offense"
+
+[node name="Retreat" type="Button" parent="HUD/UIRoot/BottomLeft/HBoxContainer" unique_id=724869849]
+layout_mode = 2
+text = "Retreat"
+
+[node name="Target" type="Button" parent="HUD/UIRoot/BottomLeft/HBoxContainer" unique_id=1933988031]
+layout_mode = 2
+text = "Target (not implemented yet)"
+
+[node name="BottomRight" type="MarginContainer" parent="HUD/UIRoot" unique_id=1421139749]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 0

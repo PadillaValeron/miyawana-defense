@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://c0nkriq1vwfk7"]
+
+[ext_resource type="Script" uid="uid://cm1oot3u2w3xj" path="res://scenes/ui/hunter_portrait.gd" id="1_5t6vx"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lmnhj"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.11764706, 0.16078432, 0.23137255, 1)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k76re"]
+bg_color = Color(0.13333334, 0.77254903, 0.36862746, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+
+[node name="HunterPortrait" type="Control" unique_id=99875371]
+custom_minimum_size = Vector2(64, 81)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 64.0
+offset_bottom = 81.0
+script = ExtResource("1_5t6vx")
+
+[node name="CircleBase" type="Panel" parent="." unique_id=1969532732]
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 64.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_lmnhj")
+
+[node name="MiniSprite" type="Sprite2D" parent="CircleBase" unique_id=1694748157]
+position = Vector2(32, 30)
+
+[node name="HealthBar" type="ProgressBar" parent="." unique_id=1676003693]
+layout_mode = 0
+offset_top = 68.0
+offset_right = 64.0
+offset_bottom = 80.0
+theme_override_styles/fill = SubResource("StyleBoxFlat_k76re")
+show_percentage = false
