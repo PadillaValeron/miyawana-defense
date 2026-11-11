@@ -12,6 +12,13 @@ extends Resource
 @export var move_speed: float = 100.0
 ## Health points recovered per second while fainted on the ground
 @export var revive_regen_rate: float = 10.0 
+# COMBAT RANGES & TIMING
+## Minimum distance to attack (0.0 for melee, higher for archers who need to back up)
+@export var min_attack_range: float = 0.0 
+## Maximum distance to start attacking
+@export var max_attack_range: float = 75.0 
+## Delay between attacks in seconds
+@export var attack_cooldown: float = 1.0
 
 @export_group("Visuals & Faces")
 @export var texture_idle: Texture2D

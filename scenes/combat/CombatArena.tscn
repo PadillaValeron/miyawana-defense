@@ -2,6 +2,9 @@
 
 [ext_resource type="PackedScene" uid="uid://d4k0qor3g3cfb" path="res://scenes/entities/Hunter.tscn" id="1_m0445"]
 [ext_resource type="Resource" uid="uid://blw8wuixlmoib" path="res://data/Generic_hunter.tres" id="2_jia5p"]
+[ext_resource type="PackedScene" uid="uid://c7bfoem5mow2w" path="res://scenes/entities/TrainingDummy.tscn" id="3_cr5mo"]
+[ext_resource type="Texture2D" uid="uid://b4ksf5eja000c" path="res://assets/sprites/monsters/dummy/dummy_idle.png" id="4_ulwyh"]
+[ext_resource type="Texture2D" uid="uid://bxxv32lvtjmv0" path="res://assets/sprites/monsters/dummy/dummy_hurt.png" id="5_qrj8j"]
 
 [node name="CombatArena" type="Node2D" unique_id=1309124301]
 
@@ -12,5 +15,16 @@ offset_right = 3007.0
 offset_bottom = 992.0
 
 [node name="Hunter" parent="." unique_id=360664571 instance=ExtResource("1_m0445")]
-position = Vector2(1125, 952)
+position = Vector2(1438, 955)
 data = ExtResource("2_jia5p")
+guard_leash_range = 1000.0
+
+[node name="TrainingDummy" parent="." unique_id=1762278640 instance=ExtResource("3_cr5mo")]
+position = Vector2(1968, 951)
+texture_idle = ExtResource("4_ulwyh")
+texture_hit = ExtResource("5_qrj8j")
+
+[node name="TrainingDummy2" parent="." unique_id=208584686 instance=ExtResource("3_cr5mo")]
+position = Vector2(627, 951)
+texture_idle = ExtResource("4_ulwyh")
+texture_hit = ExtResource("5_qrj8j")

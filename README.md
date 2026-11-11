@@ -1,6 +1,6 @@
 # Miyawana Defense — Game Design Document (GDD) & Technical Spec
 
-> **A Tactical Side-Defense & Idle Base-Building Auto-Battler with Chibi Cats**  
+> **A Tactical Side-Defense & Idle Base-Building Auto-Battler with Chibi Guild Hunters and Cats**  
 > Built with **Godot Engine 4.x** (GDScript) | Platform: PC (Mouse-only / Mobile adaptable)
 
 ---

@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://c7bfoem5mow2w"]
+
+[ext_resource type="Script" uid="uid://ckyd10r681p6a" path="res://scenes/entities/TrainingDummy.gd" id="1_8y2o1"]
+
+[node name="TrainingDummy" type="Node2D" unique_id=1762278640 groups=["monsters"]]
+script = ExtResource("1_8y2o1")
+
+[node name="VisualRoot" type="Node2D" parent="." unique_id=1033125839]
+
+[node name="DummySprite" type="Sprite2D" parent="VisualRoot" unique_id=1356149915]
