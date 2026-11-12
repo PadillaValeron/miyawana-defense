@@ -29,6 +29,8 @@ var has_reached_gate: bool = false
 # Active tweens tracking
 var walk_tween: Tween
 
+var skill_cooldown_timer: float = 0.0
+
 func _ready() -> void:
 	if data:
 		current_health = data.max_health
@@ -40,6 +42,10 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if attack_timer > 0.0:
 		attack_timer -= delta
+		
+		# Tick skill cooldown:
+	if skill_cooldown_timer > 0.0:
+		skill_cooldown_timer -= delta
 		
 	match current_state:
 		State.IDLE_WALK:
@@ -82,7 +88,7 @@ func handle_retreat_logic(delta: float) -> void:
 	# PHASE 2: Guarding the Gate (Leash Area: GATE_X to GATE_X + guard_leash_range)
 	var guard_target: Node2D = find_monster_in_guard_zone()
 	
-	if is_instance_valid(guard_target):
+	if is_valid_target(guard_target):
 		current_target = guard_target
 		
 		# If the hunter is getting dragged too far away from the gate, break chase!
@@ -114,7 +120,7 @@ func find_monster_in_guard_zone() -> Node2D:
 	var max_allowed_x: float = GATE_X_POSITION + guard_leash_range
 	
 	for m in monsters:
-		if is_instance_valid(m) and m is Node2D:
+		if is_valid_target(m) and m is Node2D:
 			# Only consider monsters that have crossed into the defense zone!
 			if m.global_position.x <= max_allowed_x:
 				var dist: float = abs(m.global_position.x - global_position.x)
@@ -126,7 +132,7 @@ func find_monster_in_guard_zone() -> Node2D:
 
 ## Stance 2: Focus a specific target chosen by player
 func handle_focus_logic(delta: float) -> void:
-	if not is_instance_valid(focus_target):
+	if not is_valid_target(focus_target):
 		# Target died or vanished; fall back to normal offensive behavior
 		order_offensive()
 		return
@@ -136,10 +142,10 @@ func handle_focus_logic(delta: float) -> void:
 
 ## Stance 3: Seek and destroy closest monster
 func handle_offensive_logic(delta: float) -> void:
-	if not is_instance_valid(current_target):
+	if not is_valid_target(current_target):
 		current_target = find_closest_monster()
 		
-	if not is_instance_valid(current_target):
+	if not is_valid_target(current_target):
 		stop_walking_animation()
 		return
 		
@@ -166,6 +172,10 @@ func execute_approach_and_attack(target_node: Node2D, delta: float) -> void:
 		stop_walking_animation()
 		if attack_timer <= 0.0:
 			perform_attack()
+
+## Checks that target exists AND is still an active monster (not playing death animation)
+func is_valid_target(target_node: Node2D) -> bool:
+	return is_instance_valid(target_node) and target_node.is_in_group("monsters")
 
 func find_closest_monster() -> Node2D:
 	var monsters: Array[Node] = get_tree().get_nodes_in_group("monsters")
@@ -212,13 +222,29 @@ func order_focus(target: Node2D) -> void:
 	current_command = CommandState.FOCUS
 	focus_target = target
 	current_target = target
+	
+	## Casts the equipped active skill if ready and allowed
+func use_active_skill() -> bool:
+	if current_state != State.IDLE_WALK:
+		return false
+	if skill_cooldown_timer > 0.0:
+		print("SKILL ON COOLDOWN! Remaining: ", snapped(skill_cooldown_timer, 0.1), "s")
+		return false
+	if not data or not data.active_skill:
+		return false
+		
+	# Start cooldown and execute
+	skill_cooldown_timer = data.active_skill.cooldown
+	print("EXECUTING SKILL: ", data.active_skill.skill_name)
+	data.active_skill.execute(self)
+	return true
 
 # ==============================================================================
 # PROCEDURAL ATTACK ANIMATION
 # ==============================================================================
 
 func perform_attack() -> void:
-	if not is_instance_valid(current_target) or current_state != State.IDLE_WALK:
+	if not is_valid_target(current_target) or current_state != State.IDLE_WALK:
 		return
 		
 	var dir_to_target: int = 1 if current_target.global_position.x > global_position.x else -1

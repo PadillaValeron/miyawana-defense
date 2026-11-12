@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MonsterData" format=3 uid="uid://1xlxec85vfqm"]
+
+[ext_resource type="Texture2D" uid="uid://b4ksf5eja000c" path="res://assets/sprites/monsters/dummy/dummy_idle.png" id="1_08o2h"]
+[ext_resource type="Script" uid="uid://j00rkahcjxh1" path="res://scripts/resources/MonsterData.gd" id="1_tps3q"]
+[ext_resource type="Script" uid="uid://c7evfqj7g2fes" path="res://scripts/resources/MonsterAttackData.gd" id="2_ert2c"]
+[ext_resource type="Texture2D" uid="uid://bxxv32lvtjmv0" path="res://assets/sprites/monsters/dummy/dummy_hurt.png" id="4_8cxi1"]
+
+[resource]
+script = ExtResource("1_tps3q")
+icon_portrait = ExtResource("1_08o2h")
+move_speed = 700.0
+attack_range = 300.0
+texture_idle = ExtResource("1_08o2h")
+texture_hit = ExtResource("4_8cxi1")
+texture_stunned = ExtResource("4_8cxi1")
+sprite_faces_right_by_default = false
+metadata/_custom_type_script = "uid://j00rkahcjxh1"

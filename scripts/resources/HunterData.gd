@@ -30,5 +30,5 @@ extends Resource
 @export var special_faces: Dictionary = {}
 
 @export_group("Abilities & Traits")
-@export var active_skill: Resource # Will hold ActiveSkillData
+@export var active_skill: ActiveSkillData # Will hold ActiveSkillData
 @export var traits: Array[Resource] = [] # Will hold Array[TraitData]

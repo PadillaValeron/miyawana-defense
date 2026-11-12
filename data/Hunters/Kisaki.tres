@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="HunterData" format=3 uid="uid://xdadqcx6x80s"]
+
+[ext_resource type="Script" uid="uid://dvqp42tfbonxq" path="res://scripts/resources/HunterData.gd" id="1_0crnq"]
+[ext_resource type="Texture2D" uid="uid://b7xkarskkypx6" path="res://assets/sprites/hunters/kisaki/Kisaki.png" id="2_uuejq"]
+
+[resource]
+script = ExtResource("1_0crnq")
+max_health = 300.0
+base_attack = 200.0
+move_speed = 500.0
+max_attack_range = 200.0
+texture_idle = ExtResource("2_uuejq")
+texture_hit = ExtResource("2_uuejq")
+texture_dead = ExtResource("2_uuejq")
+metadata/_custom_type_script = "uid://dvqp42tfbonxq"

@@ -82,6 +82,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		
 		# CLAMP: Locks camera position strictly within bounds! Zero ghost drag.
 		camera.position.x = clampf(target_cam_x, min_cam_x, max_cam_x)
+		
+	# Test special move for Squad Member 0 (Rathalos Hunter)
+	if event is InputEventKey and event.is_pressed() and not event.is_echo():
+		if event.keycode == KEY_Q:
+			trigger_hunter_skill_by_index(0)
 
 # ==============================================================================
 # SQUAD ORDERS (THE CONDUCTOR)
@@ -129,3 +134,20 @@ func confirm_target(monster_node: Node2D) -> void:
 		# Order entire squad to focus fire this monster!
 		for hunter in active_hunters:
 			hunter.order_focus(monster_node)
+			
+			
+# ==============================================================================
+# SPECIAL SKILLS DISPATCHER (THE CONDUCTOR)
+# ==============================================================================
+
+## Triggers the active skill of a specific hunter instance
+func trigger_hunter_skill(hunter: Hunter) -> bool:
+	if not is_instance_valid(hunter):
+		return false
+	return hunter.use_active_skill()
+
+## Triggers the active skill by squad slot index (0 = 1st Hunter, 1 = 2nd Hunter...)
+func trigger_hunter_skill_by_index(index: int) -> bool:
+	if index >= 0 and index < active_hunters.size():
+		return trigger_hunter_skill(active_hunters[index])
+	return false
