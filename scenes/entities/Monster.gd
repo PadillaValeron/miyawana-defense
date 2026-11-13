@@ -2,7 +2,7 @@ class_name Monster
 extends Node2D
 
 # The 4 Tactical Roles defined in the GDD
-enum Role { INVASOR, TARGETER, ASALTO, APEX }
+enum Role { INVADER, TARGETER, RUSHER, APEX }
 enum State { IDLE_WALK, ATTACKING, ACTING, STUNNED, DEAD }
 
 # Signals for HUD and CombatArena
@@ -10,7 +10,7 @@ signal health_changed(current_hp: float, max_hp: float)
 signal died(monster: Monster)
 
 @export var data: MonsterData
-@export var role: Role = Role.INVASOR
+@export var role: Role = Role.INVADER
 
 @onready var visual_root: Node2D = $VisualRoot
 @onready var sprite: Sprite2D = $VisualRoot/MonsterSprite
@@ -93,11 +93,11 @@ func _physics_process(delta: float) -> void:
 
 func handle_role_ai(delta: float) -> void:
 	match role:
-		Role.ASALTO:
+		Role.RUSHER:
 			# Ignores all hunters! Rushes directly towards the Guild Gate
 			approach_and_attack_gate(delta)
 			
-		Role.INVASOR:
+		Role.INVADER:
 			# Attacks the closest standing hunter in front, otherwise marches to the Gate
 			var hunter: Hunter = find_closest_standing_hunter()
 			if is_instance_valid(hunter) and abs(hunter.global_position.x - global_position.x) <= 300.0:

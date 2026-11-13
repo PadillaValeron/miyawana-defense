@@ -38,6 +38,7 @@ guard_leash_range = 1000.0
 [node name="Monster2" parent="Entities/Monsters" unique_id=2037796659 instance=ExtResource("5_tr5ew")]
 position = Vector2(1661, 911)
 data = ExtResource("6_7tyy2")
+role = 3
 
 [node name="Monster" parent="Entities/Monsters" unique_id=805048971 instance=ExtResource("5_tr5ew")]
 position = Vector2(2625, 913)

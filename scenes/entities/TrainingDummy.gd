@@ -17,8 +17,8 @@ func _ready() -> void:
 	if texture_idle:
 		sprite.texture = texture_idle
 		
-	# AUTO-PIVOT A LOS PIES:
-	# Ajusta la altura dinámicamente según el tamaño de la imagen
+	# AUTO-PIVOT AT FEET:
+	# Dynamically adjusts height based on image size
 	if sprite.texture:
 		sprite.position.y -= sprite.texture.get_height() * 0.5
 
