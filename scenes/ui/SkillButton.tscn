@@ -1,0 +1,66 @@
+[gd_scene format=3 uid="uid://d0y48sx5cyvrb"]
+
+[ext_resource type="Shader" uid="uid://boi1272ntdsvy" path="res://assets/shaders/cooldown_fill.gdshader" id="1_6usgm"]
+[ext_resource type="Script" uid="uid://cgolnsghi2hvv" path="res://scenes/ui/SkillButton.gd" id="1_ukxs1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_w2ewr"]
+bg_color = Color(0.11764706, 0.16078432, 0.23137255, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ukxs1"]
+shader = ExtResource("1_6usgm")
+shader_parameter/progress = 1.0
+shader_parameter/uv_top = 0.0
+shader_parameter/uv_bottom = 1.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gy0aq"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+
+[node name="SkillButton" type="Control" unique_id=1321190349]
+custom_minimum_size = Vector2(76, 76)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -1204.0
+offset_bottom = -644.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(38, 38)
+script = ExtResource("1_ukxs1")
+
+[node name="MaskCircle" type="Panel" parent="." unique_id=1212544271]
+clip_children = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_w2ewr")
+
+[node name="HeadSprite" type="Sprite2D" parent="MaskCircle" unique_id=1718317197]
+material = SubResource("ShaderMaterial_ukxs1")
+
+[node name="BorderRing" type="Panel" parent="." unique_id=1752262082]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_gy0aq")

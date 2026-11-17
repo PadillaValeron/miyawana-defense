@@ -8,6 +8,7 @@
 [resource]
 script = ExtResource("1_tps3q")
 icon_portrait = ExtResource("1_08o2h")
+base_attack = 1.0
 move_speed = 700.0
 attack_range = 300.0
 texture_idle = ExtResource("1_08o2h")

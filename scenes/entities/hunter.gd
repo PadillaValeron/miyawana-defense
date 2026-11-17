@@ -173,9 +173,10 @@ func execute_approach_and_attack(target_node: Node2D, delta: float) -> void:
 		if attack_timer <= 0.0:
 			perform_attack()
 
-## Checks that target exists AND is still an active monster (not playing death animation)
-func is_valid_target(target_node: Node2D) -> bool:
-	return is_instance_valid(target_node) and target_node.is_in_group("monsters")
+## Checks that target exists AND is still an active monster.
+## Uses Variant so it safely catches <Freed Object> references without throwing type errors!
+func is_valid_target(target_node: Variant) -> bool:
+	return is_instance_valid(target_node) and target_node is Node2D and target_node.is_in_group("monsters")
 
 func find_closest_monster() -> Node2D:
 	var monsters: Array[Node] = get_tree().get_nodes_in_group("monsters")
@@ -266,8 +267,9 @@ func perform_attack() -> void:
 	
 	await tween.finished
 	
-	if is_instance_valid(current_target) and current_target.has_method("receive_hit"):
-		current_target.receive_hit(data.base_attack, 15.0, global_position.x)
+	if is_valid_target(current_target) and current_target.has_method("receive_hit"):
+		var dmg_info: Dictionary = DamageCalculator.calculate_hunter_attack(self, current_target, 1.0)
+		current_target.receive_hit(dmg_info, 15.0, global_position.x)
 	
 	# Recovery
 	var tween_recover: Tween = create_tween().set_parallel(true)
@@ -324,6 +326,10 @@ func set_custom_face(face_key: String) -> void:
 	if data and data.special_faces.has(face_key):
 		sprite.texture = data.special_faces[face_key]
 
+## Brings the hunter above world darkness and overlapping entities when hovered/selected
+func set_highlight(active: bool) -> void:
+	z_index = 50 if active else 0
+
 # ==============================================================================
 # ANIMATIONS (TWEENS)
 # ==============================================================================
@@ -365,6 +371,12 @@ func receive_hit(damage: float, knockback_force: float = 0.0, attacker_global_x:
 		faint()
 		return
 		
+	if current_state == State.ACTING:
+		sprite.modulate = Color(3.0, 3.0, 3.0)
+		var flash_tween = create_tween()
+		flash_tween.tween_property(sprite, "modulate", Color(1, 1, 1), 0.12)
+		return
+	
 	var push_direction: float = 1.0 if attacker_global_x < global_position.x else -1.0
 	
 	if is_launch:

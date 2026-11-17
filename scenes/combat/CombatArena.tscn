@@ -3,13 +3,18 @@
 [ext_resource type="PackedScene" uid="uid://d4k0qor3g3cfb" path="res://scenes/entities/Hunter.tscn" id="1_m0445"]
 [ext_resource type="Script" uid="uid://hwx2jk87dsbv" path="res://scenes/combat/CombatArena.gd" id="1_tr5ew"]
 [ext_resource type="Resource" uid="uid://blw8wuixlmoib" path="res://data/Hunters/Generic_hunter.tres" id="2_jia5p"]
+[ext_resource type="PackedScene" uid="uid://cbdbddul2y8bi" path="res://scenes/ui/MonsterCard.tscn" id="2_k76re"]
 [ext_resource type="Resource" uid="uid://xdadqcx6x80s" path="res://data/Hunters/Kisaki.tres" id="3_7tyy2"]
+[ext_resource type="PackedScene" uid="uid://7a5fr7iq6tod" path="res://scenes/ui/FloatingText.tscn" id="3_11jxq"]
 [ext_resource type="PackedScene" uid="uid://l80cb4klytbh" path="res://scenes/entities/monster.tscn" id="5_tr5ew"]
 [ext_resource type="Resource" uid="uid://1xlxec85vfqm" path="res://data/Monsters/Monster_Dummy.tres" id="6_7tyy2"]
 [ext_resource type="PackedScene" uid="uid://c0nkriq1vwfk7" path="res://scenes/ui/HunterPortrait.tscn" id="8_k76re"]
+[ext_resource type="PackedScene" uid="uid://d0y48sx5cyvrb" path="res://scenes/ui/SkillButton.tscn" id="9_bhog4"]
 
 [node name="CombatArena" type="Node2D" unique_id=1309124301]
 script = ExtResource("1_tr5ew")
+monster_card_scene = ExtResource("2_k76re")
+floating_text_scene = ExtResource("3_11jxq")
 
 [node name="Environment" type="Node2D" parent="." unique_id=8641394]
 
@@ -18,6 +23,16 @@ offset_left = -2.0
 offset_top = 912.0
 offset_right = 5269.0
 offset_bottom = 1096.0
+
+[node name="WorldDarkOverlay" type="ColorRect" parent="." unique_id=1952127472]
+visible = false
+z_index = 10
+offset_left = -1000.0
+offset_top = -1000.0
+offset_right = 19000.0
+offset_bottom = 2000.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.7019608)
 
 [node name="Entities" type="Node2D" parent="." unique_id=1428207984]
 
@@ -35,14 +50,24 @@ guard_leash_range = 1000.0
 
 [node name="Monsters" type="Node2D" parent="Entities" unique_id=262223133]
 
+[node name="Monster" parent="Entities/Monsters" unique_id=805048971 instance=ExtResource("5_tr5ew")]
+position = Vector2(2625, 913)
+data = ExtResource("6_7tyy2")
+
 [node name="Monster2" parent="Entities/Monsters" unique_id=2037796659 instance=ExtResource("5_tr5ew")]
 position = Vector2(1661, 911)
 data = ExtResource("6_7tyy2")
 role = 3
 
-[node name="Monster" parent="Entities/Monsters" unique_id=805048971 instance=ExtResource("5_tr5ew")]
-position = Vector2(2625, 913)
+[node name="Monster3" parent="Entities/Monsters" unique_id=1367266061 instance=ExtResource("5_tr5ew")]
+position = Vector2(3154, 911)
 data = ExtResource("6_7tyy2")
+role = 2
+
+[node name="Monster4" parent="Entities/Monsters" unique_id=90295214 instance=ExtResource("5_tr5ew")]
+position = Vector2(3623, 910)
+data = ExtResource("6_7tyy2")
+role = 1
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1164938157]
 position = Vector2(1352, 360)
@@ -51,6 +76,7 @@ zoom = Vector2(0.5, 0.5)
 [node name="HUD" type="CanvasLayer" parent="." unique_id=953712362]
 
 [node name="UIRoot" type="Control" parent="HUD" unique_id=1462614516]
+z_index = 10
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -58,6 +84,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="DarkOverlay" type="ColorRect" parent="HUD/UIRoot" unique_id=439663015]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0)
 
 [node name="TopLeft" type="MarginContainer" parent="HUD/UIRoot" unique_id=1448388879]
 layout_mode = 1
@@ -86,6 +121,10 @@ offset_bottom = 40.0
 grow_horizontal = 0
 mouse_filter = 0
 
+[node name="MonsterCardsContainer" type="HBoxContainer" parent="HUD/UIRoot/TopRight" unique_id=960929760]
+layout_mode = 2
+theme_override_constants/separation = 8
+
 [node name="BottomLeft" type="MarginContainer" parent="HUD/UIRoot" unique_id=1434239477]
 layout_mode = 1
 anchors_preset = 2
@@ -96,20 +135,24 @@ offset_right = 40.0
 grow_vertical = 0
 mouse_filter = 0
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HUD/UIRoot/BottomLeft" unique_id=1493730337]
+[node name="CommandBar" type="HBoxContainer" parent="HUD/UIRoot/BottomLeft" unique_id=1493730337]
 layout_mode = 2
 
-[node name="Offense" type="Button" parent="HUD/UIRoot/BottomLeft/HBoxContainer" unique_id=1291083278]
+[node name="BtnOffense" type="Button" parent="HUD/UIRoot/BottomLeft/CommandBar" unique_id=1291083278]
 layout_mode = 2
 text = "Offense"
 
-[node name="Retreat" type="Button" parent="HUD/UIRoot/BottomLeft/HBoxContainer" unique_id=724869849]
+[node name="BtnRetreat" type="Button" parent="HUD/UIRoot/BottomLeft/CommandBar" unique_id=724869849]
 layout_mode = 2
 text = "Retreat"
 
-[node name="Target" type="Button" parent="HUD/UIRoot/BottomLeft/HBoxContainer" unique_id=1933988031]
+[node name="BtnTarget" type="Button" parent="HUD/UIRoot/BottomLeft/CommandBar" unique_id=1933988031]
 layout_mode = 2
 text = "Target (not implemented yet)"
+
+[node name="BtnCancel" type="Button" parent="HUD/UIRoot/BottomLeft/CommandBar" unique_id=706884712]
+layout_mode = 2
+text = "❌CANCEL❌"
 
 [node name="BottomRight" type="MarginContainer" parent="HUD/UIRoot" unique_id=1421139749]
 layout_mode = 1
@@ -123,3 +166,15 @@ offset_top = -40.0
 grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 0
+
+[node name="SkillsBar" type="HBoxContainer" parent="HUD/UIRoot/BottomRight" unique_id=1009684528]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SkillButton" parent="HUD/UIRoot/BottomRight/SkillsBar" unique_id=1321190349 node_paths=PackedStringArray("target_hunter") instance=ExtResource("9_bhog4")]
+layout_mode = 2
+target_hunter = NodePath("../../../../../Entities/Hunters/Hunter")
+
+[node name="SkillButton2" parent="HUD/UIRoot/BottomRight/SkillsBar" unique_id=105374811 node_paths=PackedStringArray("target_hunter") instance=ExtResource("9_bhog4")]
+layout_mode = 2
+target_hunter = NodePath("../../../../../Entities/Hunters/Hunter2")

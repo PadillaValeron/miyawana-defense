@@ -72,10 +72,9 @@ func execute(hunter: Hunter) -> void:
 	# =========================================================================
 	# PHASE 3: IMPACT & HIT CONFIRM (Only if physically reached!)
 	# =========================================================================
-	if can_reach_target and is_instance_valid(hunter.current_target) and hunter.current_target.has_method("receive_hit"):
-		var total_damage: float = hunter.data.base_attack * base_damage_multiplier
-		# Delivers massive damage + heavy 140px knockback
-		hunter.current_target.receive_hit(total_damage, knockback_delivered, hunter.global_position.x)
+	if can_reach_target and hunter.is_valid_target(hunter.current_target) and hunter.current_target.has_method("receive_hit"):
+		var dmg_info: Dictionary = DamageCalculator.calculate_hunter_attack(hunter, hunter.current_target, base_damage_multiplier)
+		hunter.current_target.receive_hit(dmg_info, knockback_delivered, hunter.global_position.x)
 	
 	# =========================================================================
 	# PHASE 4: RECOVERY & STANCE BRAKE

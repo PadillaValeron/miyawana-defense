@@ -1,6 +1,12 @@
 [gd_scene format=3 uid="uid://l80cb4klytbh"]
 
 [ext_resource type="Script" uid="uid://bgmm4hk7awsrl" path="res://scenes/entities/Monster.gd" id="1_qt0uh"]
+[ext_resource type="Shader" uid="uid://c5yfgn0yuyh4b" path="res://assets/shaders/outline.gdshader" id="2_027aw"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ofrb2"]
+shader = ExtResource("2_027aw")
+shader_parameter/outline_color = Color(1, 0.15, 0.15, 1)
+shader_parameter/outline_width = 0.0
 
 [node name="Monster" type="Node2D" unique_id=2037796659 groups=["monsters"]]
 script = ExtResource("1_qt0uh")
@@ -8,3 +14,11 @@ script = ExtResource("1_qt0uh")
 [node name="VisualRoot" type="Node2D" parent="." unique_id=948953077]
 
 [node name="MonsterSprite" type="Sprite2D" parent="VisualRoot" unique_id=465988909]
+material = SubResource("ShaderMaterial_ofrb2")
+
+[node name="HighlightMarker" type="Label" parent="." unique_id=1168895964]
+visible = false
+offset_right = 40.0
+offset_bottom = 23.0
+theme_override_font_sizes/font_size = 48
+text = "🔻"

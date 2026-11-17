@@ -1,0 +1,70 @@
+[gd_scene format=3 uid="uid://cbdbddul2y8bi"]
+
+[ext_resource type="Script" uid="uid://cflacktr6n5ix" path="res://scenes/ui/MonsterCard.gd" id="1_cu5ad"]
+
+[node name="MonsterCard" type="Control" unique_id=1372246481]
+custom_minimum_size = Vector2(72, 88)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_cu5ad")
+
+[node name="CardFrame" type="Panel" parent="." unique_id=951765230]
+layout_mode = 0
+offset_right = 72.0
+offset_bottom = 72.0
+mouse_filter = 2
+
+[node name="MonsterIcon" type="TextureRect" parent="CardFrame" unique_id=736644324]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RoleBadge" type="ColorRect" parent="CardFrame" unique_id=1130287888]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -24.0
+offset_top = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="RoleSymbol" type="Label" parent="CardFrame/RoleBadge" unique_id=1153115286]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TargetBadges" type="HBoxContainer" parent="CardFrame" unique_id=1308762473]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -72.0
+offset_bottom = 22.0
+grow_horizontal = 0
+
+[node name="HealthBar" type="ProgressBar" parent="." unique_id=334099258]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -10.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 0
+show_percentage = false

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c0nkriq1vwfk7"]
 
-[ext_resource type="Script" uid="uid://cm1oot3u2w3xj" path="res://scenes/ui/hunter_portrait.gd" id="1_5t6vx"]
+[ext_resource type="Script" uid="uid://cm1oot3u2w3xj" path="res://scenes/ui/HunterPortrait.gd" id="1_5t6vx"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lmnhj"]
 bg_color = Color(1, 1, 1, 1)
@@ -33,15 +33,25 @@ script = ExtResource("1_5t6vx")
 layout_mode = 0
 offset_right = 64.0
 offset_bottom = 64.0
+mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_lmnhj")
 
 [node name="MiniSprite" type="Sprite2D" parent="CircleBase" unique_id=1694748157]
 position = Vector2(32, 30)
+
+[node name="FocusBadge" type="Label" parent="CircleBase" unique_id=1997633298]
+layout_mode = 0
+offset_left = 43.0
+offset_top = -4.0
+offset_right = 83.0
+offset_bottom = 19.0
+text = "🔗"
 
 [node name="HealthBar" type="ProgressBar" parent="." unique_id=1676003693]
 layout_mode = 0
 offset_top = 68.0
 offset_right = 64.0
 offset_bottom = 80.0
+mouse_filter = 2
 theme_override_styles/fill = SubResource("StyleBoxFlat_k76re")
 show_percentage = false

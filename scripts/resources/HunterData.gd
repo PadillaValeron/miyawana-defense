@@ -21,6 +21,7 @@ extends Resource
 @export var attack_cooldown: float = 1.0
 
 @export_group("Visuals & Faces")
+@export var icon_portrait: Texture2D # Optional cropped headshot for UI skill buttons
 @export var texture_idle: Texture2D
 @export var texture_hit: Texture2D
 @export var texture_dead: Texture2D
