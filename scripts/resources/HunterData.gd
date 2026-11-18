@@ -2,34 +2,33 @@ class_name HunterData
 extends Resource
 
 @export_group("Identity & Lore")
-@export var id: String = "Generic_hunter"
-@export var hunter_name: String = "Generic hunter"
+@export var id: String = "hunter_rathalos"
+@export var hunter_name: String = "Rathalos Hunter"
 @export_multiline var lore_description: String = "A fierce hunter forged in the volcanic peaks, relentless in battle."
 
 @export_group("Base Stats")
 @export var max_health: float = 120.0
-@export var base_attack: float = 30.0
+@export var base_attack: float = 20.0
+@export var base_defense: float = 10.0
 @export var move_speed: float = 100.0
-## Health points recovered per second while fainted on the ground
-@export var revive_regen_rate: float = 10.0 
-# COMBAT RANGES & TIMING
-## Minimum distance to attack (0.0 for melee, higher for archers who need to back up)
-@export var min_attack_range: float = 0.0 
-## Maximum distance to start attacking
-@export var max_attack_range: float = 75.0 
-## Delay between attacks in seconds
+@export var revive_regen_rate: float = 25.0
+
+@export_group("Combat Ranges & Timing")
+@export var min_attack_range: float = 0.0
+@export var max_attack_range: float = 75.0
 @export var attack_cooldown: float = 1.0
 
+@export_group("Equipment")
+@export var default_weapon: WeaponData # Equipped weapon (.tres)
+
 @export_group("Visuals & Faces")
-@export var icon_portrait: Texture2D # Optional cropped headshot for UI skill buttons
+@export var icon_portrait: Texture2D
 @export var texture_idle: Texture2D
 @export var texture_hit: Texture2D
 @export var texture_dead: Texture2D
-## Optional: Assign only if this character has an asymmetric design (scars, eyepatch...)
-@export var texture_idle_left: Texture2D 
-## Dictionary for extra expressions (e.g. "enraged": texture_flame_eyes.png)
+@export var texture_idle_left: Texture2D
 @export var special_faces: Dictionary = {}
 
 @export_group("Abilities & Traits")
-@export var active_skill: ActiveSkillData # Will hold ActiveSkillData
-@export var traits: Array[Resource] = [] # Will hold Array[TraitData]
+@export var active_skill: ActiveSkillData
+@export var traits: Array[Resource] = []

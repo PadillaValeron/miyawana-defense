@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://dvqp42tfbonxq" path="res://scripts/resources/HunterData.gd" id="1_0crnq"]
 [ext_resource type="Script" uid="uid://sieu65a8b8w1" path="res://scripts/resources/Skills/WhirlwindSkill.gd" id="1_uuejq"]
 [ext_resource type="Texture2D" uid="uid://b7xkarskkypx6" path="res://assets/sprites/hunters/kisaki/Kisaki.png" id="2_uuejq"]
+[ext_resource type="Resource" uid="uid://b4mdwsy273om6" path="res://data/Weapons/TestBow.tres" id="2_xt3ky"]
 
 [sub_resource type="Resource" id="Resource_11jxq"]
 script = ExtResource("1_uuejq")
@@ -15,7 +16,9 @@ metadata/_custom_type_script = "uid://sieu65a8b8w1"
 script = ExtResource("1_0crnq")
 max_health = 300.0
 move_speed = 500.0
-max_attack_range = 200.0
+min_attack_range = 400.0
+max_attack_range = 1000.0
+default_weapon = ExtResource("2_xt3ky")
 texture_idle = ExtResource("2_uuejq")
 texture_hit = ExtResource("2_uuejq")
 texture_dead = ExtResource("2_uuejq")

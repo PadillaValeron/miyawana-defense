@@ -9,6 +9,8 @@ extends Resource
 @export_group("Stats & Timing")
 @export var cooldown: float = 8.0 # Cooldown in seconds
 @export var base_damage_multiplier: float = 2.5 # Deals 250% base damage
+## If true, triggers the MUGEN-style freeze-frame zoom & dark spotlight before casting
+@export var play_cut_in: bool = true
 
 ## Virtual method: must be implemented by specific skill scripts
 func execute(_hunter: Hunter) -> void:

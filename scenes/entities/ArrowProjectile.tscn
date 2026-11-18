@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://c281vxqt1ehjr"]
+
+[ext_resource type="Script" uid="uid://b8qq06njee4u3" path="res://scenes/entities/Projectile.gd" id="1_63ey0"]
+
+[node name="ArrowProjectile" type="Node2D" unique_id=1586756377]
+z_index = 5
+script = ExtResource("1_63ey0")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=275770825]
+offset_left = -30.0
+offset_top = -3.0
+offset_right = 15.0
+offset_bottom = 3.0
+color = Color(0.99607843, 0.9529412, 0.78039217, 1)
+
+[node name="Polygon2D" type="Polygon2D" parent="." unique_id=1561931022]
+polygon = PackedVector2Array(12, -10, 32, 0, 12, 10)

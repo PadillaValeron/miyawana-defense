@@ -4,7 +4,7 @@ extends Resource
 @export_group("Identity")
 @export var id: String = "monster_dummy"
 @export var monster_name: String = "Evil Dummy"
-@export var icon_portrait: Texture2D # Icon for the Top-Right HUD
+@export var icon_portrait: Texture2D
 
 @export_group("Base Stats")
 @export var max_health: float = 300.0
@@ -15,15 +15,22 @@ extends Resource
 @export var basic_knockback: float = 25.0
 
 @export_group("Physical Resistances (Multipliers)")
+## >1.0 = Weak (Yellow numbers), <1.0 = Resistant (Grey numbers)
 @export var res_slash: float = 1.0
 @export var res_blunt: float = 1.0
 @export var res_pierce: float = 1.0
+
+@export_group("Elemental Resistances (Multipliers)")
+@export var res_fire: float = 1.0
+@export var res_water: float = 1.0
+@export var res_thunder: float = 1.0
+@export var res_ice: float = 1.0
+@export var res_dragon: float = 1.0
 
 @export_group("Visuals")
 @export var texture_idle: Texture2D
 @export var texture_hit: Texture2D
 @export var texture_stunned: Texture2D
-## Check this if your drawn sprite naturally looks to the RIGHT instead of LEFT
 @export var sprite_faces_right_by_default: bool = true
 
 @export_group("Apex Modifiers")
@@ -33,3 +40,20 @@ extends Resource
 
 @export_group("Special Moves")
 @export var special_attacks: Array[MonsterAttackData] = []
+
+## Clean lookup helpers for DamageCalculator
+func get_physical_resistance(dmg_type: WeaponData.DamageType) -> float:
+	match dmg_type:
+		WeaponData.DamageType.SLASH:  return res_slash
+		WeaponData.DamageType.BLUNT:  return res_blunt
+		WeaponData.DamageType.PIERCE: return res_pierce
+	return 1.0
+
+func get_elemental_resistance(elem_type: WeaponData.ElementType) -> float:
+	match elem_type:
+		WeaponData.ElementType.FIRE:    return res_fire
+		WeaponData.ElementType.WATER:   return res_water
+		WeaponData.ElementType.THUNDER: return res_thunder
+		WeaponData.ElementType.ICE:     return res_ice
+		WeaponData.ElementType.DRAGON:  return res_dragon
+	return 1.0

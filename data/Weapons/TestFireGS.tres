@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://c4y3kduw6lah4"]
+
+[ext_resource type="Script" uid="uid://cxahtyp6q4nu2" path="res://scripts/resources/WeaponData.gd" id="1_h7miq"]
+
+[resource]
+script = ExtResource("1_h7miq")
+id = "FireGs"
+weapon_name = "Volcanic splitter"
+attack_power = 60.0
+affinity = 25.0
+sharpness = 5
+element_type = 1
+element_power = 35.0
+metadata/_custom_type_script = "uid://cxahtyp6q4nu2"

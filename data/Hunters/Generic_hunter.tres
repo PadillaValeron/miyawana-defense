@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://k0sqf0ddxijp" path="res://scripts/resources/Skills/HeavyCleaveSkill.gd" id="1_281nk"]
 [ext_resource type="Script" uid="uid://dvqp42tfbonxq" path="res://scripts/resources/HunterData.gd" id="1_bflsi"]
+[ext_resource type="Resource" uid="uid://c4y3kduw6lah4" path="res://data/Weapons/TestFireGS.tres" id="2_3jvy7"]
 [ext_resource type="Texture2D" uid="uid://ycxppv04fie1" path="res://assets/sprites/hunters/generic_hunter/generic_hunter_hit.png" id="3_ijuco"]
 [ext_resource type="Texture2D" uid="uid://blktjk44lqx8t" path="res://assets/sprites/hunters/generic_hunter/generic_hunter_idle.png" id="4_emut5"]
 
@@ -13,6 +14,7 @@ metadata/_custom_type_script = "uid://k0sqf0ddxijp"
 script = ExtResource("1_bflsi")
 move_speed = 500.0
 max_attack_range = 200.0
+default_weapon = ExtResource("2_3jvy7")
 texture_idle = ExtResource("4_emut5")
 texture_hit = ExtResource("3_ijuco")
 texture_dead = ExtResource("3_ijuco")

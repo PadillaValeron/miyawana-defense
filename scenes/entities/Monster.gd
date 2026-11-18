@@ -27,6 +27,7 @@ var current_target: Node2D = null
 var attack_timer: float = 0.0
 var target_reevaluate_timer: float = 0.0
 const GATE_X_POSITION: float = 140.0
+var range_variance: float = 0.0
 
 var unlocked_specials: Array[MonsterAttackData] = []
 var special_cooldowns: Dictionary = {}
@@ -36,6 +37,7 @@ var walk_tween: Tween
 func _ready() -> void:
 	if not data:
 		return
+	range_variance = randf_range(-20.0, 20.0)
 	setup_monster_stats()
 	setup_visuals()
 	start_walking_animation()
@@ -132,7 +134,8 @@ func engage_hunter(hunter: Hunter, delta: float) -> void:
 	var dir: int = 1 if hunter.global_position.x > global_position.x else -1
 	set_facing_direction(dir)
 	
-	if dist > data.attack_range:
+	var effective_range: float = max(35.0, data.attack_range + range_variance)
+	if dist > effective_range:
 		position.x += data.move_speed * dir * delta
 		resume_walking_animation_if_needed()
 	else:
@@ -143,8 +146,9 @@ func approach_and_attack_gate(delta: float) -> void:
 	current_target = null
 	set_facing_direction(-1)
 	
+	var effective_range: float = max(35.0, data.attack_range + range_variance)
 	var dist_to_gate: float = abs(global_position.x - GATE_X_POSITION)
-	if global_position.x > GATE_X_POSITION + data.attack_range:
+	if global_position.x > GATE_X_POSITION + effective_range:
 		position.x -= data.move_speed * delta
 		resume_walking_animation_if_needed()
 	else:

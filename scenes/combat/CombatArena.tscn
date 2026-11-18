@@ -13,6 +13,10 @@
 
 [node name="CombatArena" type="Node2D" unique_id=1309124301]
 script = ExtResource("1_tr5ew")
+lane_total_width = 5000.0
+monster_scene = ExtResource("5_tr5ew")
+default_monster_data = ExtResource("6_7tyy2")
+max_active_monsters = 4
 monster_card_scene = ExtResource("2_k76re")
 floating_text_scene = ExtResource("3_11jxq")
 
@@ -20,7 +24,7 @@ floating_text_scene = ExtResource("3_11jxq")
 
 [node name="ColorRect" type="ColorRect" parent="Environment" unique_id=676275904]
 offset_left = -2.0
-offset_top = 912.0
+offset_top = 890.0
 offset_right = 5269.0
 offset_bottom = 1096.0
 
@@ -35,8 +39,10 @@ mouse_filter = 2
 color = Color(0, 0, 0, 0.7019608)
 
 [node name="Entities" type="Node2D" parent="." unique_id=1428207984]
+y_sort_enabled = true
 
 [node name="Hunters" type="Node2D" parent="Entities" unique_id=840522750]
+y_sort_enabled = true
 
 [node name="Hunter" parent="Entities/Hunters" unique_id=1037081318 instance=ExtResource("1_m0445")]
 position = Vector2(2766, 915)
@@ -49,25 +55,7 @@ data = ExtResource("3_7tyy2")
 guard_leash_range = 1000.0
 
 [node name="Monsters" type="Node2D" parent="Entities" unique_id=262223133]
-
-[node name="Monster" parent="Entities/Monsters" unique_id=805048971 instance=ExtResource("5_tr5ew")]
-position = Vector2(2625, 913)
-data = ExtResource("6_7tyy2")
-
-[node name="Monster2" parent="Entities/Monsters" unique_id=2037796659 instance=ExtResource("5_tr5ew")]
-position = Vector2(1661, 911)
-data = ExtResource("6_7tyy2")
-role = 3
-
-[node name="Monster3" parent="Entities/Monsters" unique_id=1367266061 instance=ExtResource("5_tr5ew")]
-position = Vector2(3154, 911)
-data = ExtResource("6_7tyy2")
-role = 2
-
-[node name="Monster4" parent="Entities/Monsters" unique_id=90295214 instance=ExtResource("5_tr5ew")]
-position = Vector2(3623, 910)
-data = ExtResource("6_7tyy2")
-role = 1
+y_sort_enabled = true
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1164938157]
 position = Vector2(1352, 360)
@@ -178,3 +166,17 @@ target_hunter = NodePath("../../../../../Entities/Hunters/Hunter")
 [node name="SkillButton2" parent="HUD/UIRoot/BottomRight/SkillsBar" unique_id=105374811 node_paths=PackedStringArray("target_hunter") instance=ExtResource("9_bhog4")]
 layout_mode = 2
 target_hunter = NodePath("../../../../../Entities/Hunters/Hunter2")
+
+[node name="Label" type="Label" parent="HUD/UIRoot" unique_id=574008442]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -293.5
+offset_right = 293.5
+offset_bottom = 23.0
+grow_horizontal = 2
+text = "[1] Invader | [2] Rusher | [3] Targeter | [4] Apex | Drag Arena to Pan Camera"
+
+[node name="SpawnPoint" type="Marker2D" parent="." unique_id=1971449733]
+position = Vector2(4128, 911)
