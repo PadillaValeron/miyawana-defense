@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://7a5fr7iq6tod" path="res://scenes/ui/FloatingText.tscn" id="3_11jxq"]
 [ext_resource type="PackedScene" uid="uid://l80cb4klytbh" path="res://scenes/entities/monster.tscn" id="5_tr5ew"]
 [ext_resource type="Resource" uid="uid://1xlxec85vfqm" path="res://data/Monsters/Monster_Dummy.tres" id="6_7tyy2"]
+[ext_resource type="PackedScene" uid="uid://c7u8j7ppvuicr" path="res://scenes/entities/GuildGate.tscn" id="6_kapql"]
 [ext_resource type="PackedScene" uid="uid://c0nkriq1vwfk7" path="res://scenes/ui/HunterPortrait.tscn" id="8_k76re"]
 [ext_resource type="PackedScene" uid="uid://d0y48sx5cyvrb" path="res://scenes/ui/SkillButton.tscn" id="9_bhog4"]
 
@@ -28,6 +29,9 @@ offset_top = 890.0
 offset_right = 5269.0
 offset_bottom = 1096.0
 
+[node name="GuildGate" parent="Environment" unique_id=1258742643 instance=ExtResource("6_kapql")]
+position = Vector2(80, 890)
+
 [node name="WorldDarkOverlay" type="ColorRect" parent="." unique_id=1952127472]
 visible = false
 z_index = 10
@@ -45,7 +49,7 @@ y_sort_enabled = true
 y_sort_enabled = true
 
 [node name="Hunter" parent="Entities/Hunters" unique_id=1037081318 instance=ExtResource("1_m0445")]
-position = Vector2(2766, 915)
+position = Vector2(2827, 917)
 data = ExtResource("2_jia5p")
 guard_leash_range = 1000.0
 
@@ -128,15 +132,12 @@ layout_mode = 2
 
 [node name="BtnOffense" type="Button" parent="HUD/UIRoot/BottomLeft/CommandBar" unique_id=1291083278]
 layout_mode = 2
-text = "Offense"
 
 [node name="BtnRetreat" type="Button" parent="HUD/UIRoot/BottomLeft/CommandBar" unique_id=724869849]
 layout_mode = 2
-text = "Retreat"
 
 [node name="BtnTarget" type="Button" parent="HUD/UIRoot/BottomLeft/CommandBar" unique_id=1933988031]
 layout_mode = 2
-text = "Target (not implemented yet)"
 
 [node name="BtnCancel" type="Button" parent="HUD/UIRoot/BottomLeft/CommandBar" unique_id=706884712]
 layout_mode = 2
@@ -169,14 +170,82 @@ target_hunter = NodePath("../../../../../Entities/Hunters/Hunter2")
 
 [node name="Label" type="Label" parent="HUD/UIRoot" unique_id=574008442]
 layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -293.5
+offset_top = -65.0
+offset_right = 293.5
+offset_bottom = -42.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "[1] Invader | [2] Rusher | [3] Targeter | [4] Apex | Drag Arena to Pan Camera"
+
+[node name="TopCenter" type="MarginContainer" parent="HUD/UIRoot" unique_id=85024511]
+layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -293.5
-offset_right = 293.5
-offset_bottom = 23.0
+offset_left = -95.0
+offset_right = 95.0
+offset_bottom = 40.0
 grow_horizontal = 2
-text = "[1] Invader | [2] Rusher | [3] Targeter | [4] Apex | Drag Arena to Pan Camera"
+
+[node name="GateStatus" type="VBoxContainer" parent="HUD/UIRoot/TopCenter" unique_id=532525221]
+layout_mode = 2
+
+[node name="GateLabel" type="Label" parent="HUD/UIRoot/TopCenter/GateStatus" unique_id=1589564527]
+layout_mode = 2
+text = "GUILD GATE: 1000 / 1000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GateHealthBar" type="ProgressBar" parent="HUD/UIRoot/TopCenter/GateStatus" unique_id=1852079797]
+custom_minimum_size = Vector2(280, 18)
+layout_mode = 2
+show_percentage = false
+
+[node name="DefeatPanel" type="Panel" parent="HUD/UIRoot" unique_id=233385033]
+visible = false
+z_index = 50
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -155.875
+offset_top = -49.0
+offset_right = 155.875
+offset_bottom = 49.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HUD/UIRoot/DefeatPanel" unique_id=894003297]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.5
+offset_top = -29.0
+offset_right = 150.5
+offset_bottom = 29.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="HUD/UIRoot/DefeatPanel/VBoxContainer" unique_id=1533901312]
+layout_mode = 2
+text = "DEFEAT - THE GUILD GATE HAS FALLEN!"
+
+[node name="BtnRetry" type="Button" parent="HUD/UIRoot/DefeatPanel/VBoxContainer" unique_id=1049547194]
+layout_mode = 2
+text = "RETRY BATTLE"
+flat = true
 
 [node name="SpawnPoint" type="Marker2D" parent="." unique_id=1971449733]
 position = Vector2(4128, 911)

@@ -12,6 +12,7 @@ metadata/_custom_type_script = "uid://k0sqf0ddxijp"
 
 [resource]
 script = ExtResource("1_bflsi")
+base_attack = 10.0
 move_speed = 500.0
 max_attack_range = 200.0
 default_weapon = ExtResource("2_3jvy7")

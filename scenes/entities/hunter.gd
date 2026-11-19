@@ -25,8 +25,8 @@ var attack_timer: float = 0.0
 var skill_cooldown_timer: float = 0.0
 var has_reached_gate: bool = false
 
-const GATE_X_POSITION: float = 120.0
-const MIN_ARENA_X: float = 70.0 # Prevents backpedaling archers from clipping past the left Gate wall!
+const FALLBACK_LEFT_LIMIT: float = 175.0
+const MAX_ARENA_X: float = 2900.0
 
 var range_variance: float = 0.0
 var gate_x_offset: float = 0.0
@@ -38,7 +38,7 @@ func _ready() -> void:
 		equipped_weapon = data.default_weapon
 		
 	range_variance = randf_range(-22.0, 22.0)
-	gate_x_offset = randf_range(-30.0, 35.0)
+	gate_x_offset = randf_range(0.0, 50.0) # Staggered formation in front of the Gate
 	position.y += randf_range(-20.0, 20.0)
 	
 	update_facing_visuals()
@@ -47,6 +47,16 @@ func _ready() -> void:
 
 func equip_weapon(new_weapon: WeaponData) -> void:
 	equipped_weapon = new_weapon
+
+## Dynamic left boundary: strictly 35px in front of the Guild Gate wall
+func get_left_arena_limit() -> float:
+	var gate: GuildGate = get_tree().get_first_node_in_group("guild_gate") as GuildGate
+	if is_instance_valid(gate):
+		return gate.get_front_wall_x() + 35.0
+	return FALLBACK_LEFT_LIMIT
+
+func clamp_x_to_arena(target_x: float) -> float:
+	return clampf(target_x, get_left_arena_limit(), MAX_ARENA_X)
 
 func _physics_process(delta: float) -> void:
 	if attack_timer > 0.0:
@@ -62,6 +72,9 @@ func _physics_process(delta: float) -> void:
 				current_health += data.revive_regen_rate * delta
 				if current_health >= data.max_health:
 					revive()
+					
+	# HARD WALL CLAMP: Guarantees no knockback, dash, or spin ever clips past the Gate!
+	position.x = clamp_x_to_arena(position.x)
 
 # ==============================================================================
 # COMBAT AI & TACTICAL ORDERS
@@ -77,7 +90,8 @@ func handle_combat_ai(delta: float) -> void:
 			handle_offensive_logic(delta)
 
 func handle_retreat_logic(delta: float) -> void:
-	var my_gate_spot_x: float = GATE_X_POSITION + gate_x_offset
+	var left_limit: float = get_left_arena_limit()
+	var my_gate_spot_x: float = left_limit + gate_x_offset
 	
 	if not has_reached_gate:
 		if position.x > my_gate_spot_x + 10.0:
@@ -93,7 +107,7 @@ func handle_retreat_logic(delta: float) -> void:
 	var guard_target: Node2D = find_monster_in_guard_zone()
 	if is_valid_target(guard_target):
 		current_target = guard_target
-		if position.x > GATE_X_POSITION + guard_leash_range:
+		if position.x > left_limit + guard_leash_range:
 			stop_walking_animation()
 			position.x -= data.move_speed * delta
 			set_facing_direction(-1)
@@ -114,7 +128,7 @@ func find_monster_in_guard_zone() -> Node2D:
 	var monsters: Array[Node] = get_tree().get_nodes_in_group("monsters")
 	var closest: Node2D = null
 	var min_dist: float = INF
-	var max_allowed_x: float = GATE_X_POSITION + guard_leash_range
+	var max_allowed_x: float = get_left_arena_limit() + guard_leash_range
 	for m in monsters:
 		if is_instance_valid(m) and m is Node2D:
 			if m.global_position.x <= max_allowed_x:
@@ -148,25 +162,21 @@ func execute_approach_and_attack(target_node: Node2D, delta: float) -> void:
 	var effective_max_range: float = max(data.min_attack_range + 15.0, data.max_attack_range + range_variance)
 	
 	if distance_to_target > effective_max_range:
-		# Too far: Walk towards target
 		position.x += data.move_speed * dir_to_target * delta
 		resume_walking_animation_if_needed()
 	elif distance_to_target < data.min_attack_range:
-		# Check if archer is cornered against the left Gate wall!
 		var backpedal_dir: int = -dir_to_target
-		var is_cornered_at_gate: bool = (backpedal_dir < 0 and position.x <= MIN_ARENA_X)
+		var is_cornered_left: bool = (backpedal_dir < 0 and position.x <= get_left_arena_limit() + 5.0)
+		var is_cornered_right: bool = (backpedal_dir > 0 and position.x >= MAX_ARENA_X - 5.0)
 		
-		if not is_cornered_at_gate:
-			# Safe to backpedal while looking at target
+		if not is_cornered_left and not is_cornered_right:
 			position.x += data.move_speed * backpedal_dir * delta
 			resume_walking_animation_if_needed()
 		else:
-			# Cornered against wall: stand ground and shoot anyway!
 			stop_walking_animation()
 			if attack_timer <= 0.0:
 				perform_attack()
 	else:
-		# Inside ideal range: Stop and attack!
 		stop_walking_animation()
 		if attack_timer <= 0.0:
 			perform_attack()
@@ -247,7 +257,6 @@ func perform_attack() -> void:
 	current_state = State.ATTACKING
 	attack_timer = data.attack_cooldown
 	
-	# Check if equipped weapon is Ranged (Bow) or Melee
 	if equipped_weapon and equipped_weapon.is_ranged and equipped_weapon.projectile_scene:
 		await play_ranged_bow_attack()
 	else:
@@ -280,25 +289,20 @@ func play_melee_attack() -> void:
 func play_ranged_bow_attack() -> void:
 	var f_scale: float = get_facing_scale_x()
 	
-	# 1. Draw the bowstring (lean back slightly & stretch)
 	var tween_draw: Tween = create_tween().set_parallel(true)
 	tween_draw.tween_property(visual_root, "rotation_degrees", -8.0 * facing_direction, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween_draw.tween_property(visual_root, "scale", Vector2(1.12 * f_scale, 0.9), 0.18)
 	await tween_draw.finished
 	
-	# 2. Snap release & Spawn Parabolic Arrow!
 	if is_valid_target(current_target):
 		var dmg_info: Dictionary = DamageCalculator.calculate_hunter_attack(self, current_target, 1.0)
 		var arrow: Projectile = equipped_weapon.projectile_scene.instantiate()
-		
-		# Add arrow to the main scene root so it flies freely in world coordinates
 		get_tree().current_scene.add_child(arrow)
 		
 		var spawn_height: float = -sprite.texture.get_height() * 0.55 if sprite.texture else -180.0
 		var hand_pos: Vector2 = global_position + Vector2(25.0 * facing_direction, spawn_height)
 		arrow.launch(hand_pos, current_target, dmg_info, 8.0, global_position.x)
 		
-	# 3. Release recoil bounce
 	var tween_release: Tween = create_tween().set_parallel(true)
 	tween_release.tween_property(visual_root, "rotation_degrees", 4.0 * facing_direction, 0.08)
 	tween_release.tween_property(visual_root, "scale", Vector2(0.92 * f_scale, 1.08), 0.08)
@@ -377,7 +381,7 @@ func resume_walking_animation_if_needed() -> void:
 		start_walking_animation()
 
 # ==============================================================================
-# DAMAGE RECEPTIONS
+# DAMAGE RECEPTIONS (CLAMPED TO ARENA WALLS)
 # ==============================================================================
 
 func receive_hit(damage: float, knockback_force: float = 0.0, attacker_global_x: float = 0.0, is_launch: bool = false, launch_height: float = 120.0) -> void:
@@ -435,7 +439,8 @@ func play_knockback_reaction(force: float, push_direction: float) -> void:
 	tween.parallel().tween_property(visual_root, "scale:y", 1.2, 0.1)
 	tween.parallel().tween_property(visual_root, "rotation_degrees", lean_angle, 0.1)
 	
-	var target_x: float = position.x + (push_direction * force)
+	# Clamped knockback target! Never goes past Gate wall
+	var target_x: float = clamp_x_to_arena(position.x + (push_direction * force))
 	tween.parallel().tween_property(self, "position:x", target_x, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(visual_root, "scale:y", 1.0, 0.15)
 	tween.parallel().tween_property(visual_root, "rotation_degrees", 0.0, 0.15)
@@ -464,7 +469,8 @@ func play_launch_reaction(distance: float, height: float, push_direction: float)
 	tween_y.tween_property(visual_root, "position:y", 0.0, air_time * 0.48).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	
 	var tween_flight: Tween = create_tween().set_parallel(true)
-	var impact_x: float = position.x + (push_direction * flight_distance)
+	# Clamp airborne impact against the wall!
+	var impact_x: float = clamp_x_to_arena(position.x + (push_direction * flight_distance))
 	tween_flight.tween_property(self, "position:x", impact_x, air_time).set_trans(Tween.TRANS_LINEAR)
 	var total_tumble: float = 450.0 * push_direction
 	tween_flight.tween_property(visual_root, "rotation_degrees", total_tumble, air_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -475,7 +481,8 @@ func play_launch_reaction(distance: float, height: float, push_direction: float)
 	set_face(FaceState.DEAD)
 	
 	var tween_skid: Tween = create_tween().set_parallel(true)
-	var final_x: float = position.x + (push_direction * skid_distance)
+	# Clamp ground skid against the wall!
+	var final_x: float = clamp_x_to_arena(position.x + (push_direction * skid_distance))
 	tween_skid.tween_property(self, "position:x", final_x, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween_skid.tween_property(sprite, "position:y", original_sprite_y, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	

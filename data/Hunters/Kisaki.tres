@@ -15,6 +15,7 @@ metadata/_custom_type_script = "uid://sieu65a8b8w1"
 [resource]
 script = ExtResource("1_0crnq")
 max_health = 300.0
+base_attack = 10.0
 move_speed = 500.0
 min_attack_range = 400.0
 max_attack_range = 1000.0

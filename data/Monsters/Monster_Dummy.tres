@@ -3,11 +3,35 @@
 [ext_resource type="Texture2D" uid="uid://b4ksf5eja000c" path="res://assets/sprites/monsters/dummy/dummy_idle.png" id="1_08o2h"]
 [ext_resource type="Script" uid="uid://j00rkahcjxh1" path="res://scripts/resources/MonsterData.gd" id="1_tps3q"]
 [ext_resource type="Script" uid="uid://c7evfqj7g2fes" path="res://scripts/resources/MonsterAttackData.gd" id="2_ert2c"]
+[ext_resource type="Script" uid="uid://d13mxst8a7fxx" path="res://scripts/resources/monster_attacks/MonsterJumpSlamAttack.gd" id="4_5b00l"]
 [ext_resource type="Texture2D" uid="uid://bxxv32lvtjmv0" path="res://assets/sprites/monsters/dummy/dummy_hurt.png" id="4_8cxi1"]
+[ext_resource type="PackedScene" uid="uid://b04eidegooo7m" path="res://scenes/entities/MonsterFireball.tscn" id="5_26i1u"]
+[ext_resource type="Script" uid="uid://da1b0sr17bx2p" path="res://scripts/resources/monster_attacks/MonsterProjectileAttack.gd" id="5_htrto"]
+[ext_resource type="Script" uid="uid://btlmjf8rn4xwl" path="res://scripts/resources/monster_attacks/MonsterTackleAttack.gd" id="6_26i1u"]
+
+[sub_resource type="Resource" id="Resource_68buf"]
+script = ExtResource("4_5b00l")
+jump_height = 300.0
+aoe_radius = 500.0
+is_apex_only = true
+trigger_chance = 1.0
+max_range = 500.0
+metadata/_custom_type_script = "uid://d13mxst8a7fxx"
+
+[sub_resource type="Resource" id="Resource_fijo5"]
+script = ExtResource("5_htrto")
+projectile_scene = ExtResource("5_26i1u")
+metadata/_custom_type_script = "uid://da1b0sr17bx2p"
+
+[sub_resource type="Resource" id="Resource_4djk0"]
+script = ExtResource("6_26i1u")
+is_apex_only = true
+metadata/_custom_type_script = "uid://btlmjf8rn4xwl"
 
 [resource]
 script = ExtResource("1_tps3q")
 icon_portrait = ExtResource("1_08o2h")
+max_health = 2000.0
 move_speed = 700.0
 attack_range = 300.0
 res_slash = 1.5
@@ -16,4 +40,5 @@ texture_idle = ExtResource("1_08o2h")
 texture_hit = ExtResource("4_8cxi1")
 texture_stunned = ExtResource("4_8cxi1")
 sprite_faces_right_by_default = false
+special_attacks = Array[ExtResource("2_ert2c")]([SubResource("Resource_68buf"), SubResource("Resource_fijo5"), SubResource("Resource_4djk0")])
 metadata/_custom_type_script = "uid://j00rkahcjxh1"

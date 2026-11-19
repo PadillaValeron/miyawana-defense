@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://b04eidegooo7m"]
+
+[ext_resource type="Script" uid="uid://b8qq06njee4u3" path="res://scenes/entities/Projectile.gd" id="1_68buf"]
+
+[node name="MonsterFireball" type="Node2D" unique_id=1794223341]
+script = ExtResource("1_68buf")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=637330589]
+offset_left = -13.0
+offset_top = -13.0
+offset_right = 13.0
+offset_bottom = 13.0
+rotation = 0.7853982
+pivot_offset = Vector2(13, 13)
+color = Color(0.88235295, 0.11372549, 0.28235295, 1)
+
+[node name="ColorRect2" type="ColorRect" parent="." unique_id=1827765522]
+offset_left = -7.0
+offset_top = -7.0
+offset_right = 7.0
+offset_bottom = 7.0
+rotation = 0.7853982
+pivot_offset = Vector2(7, 7)
+color = Color(0.99215686, 0.8784314, 0.2784314, 1)

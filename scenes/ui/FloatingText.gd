@@ -24,6 +24,8 @@ func setup_and_play(damage_info: Dictionary) -> void:
 			damage_label.modulate = Color("#fde047") # Bright Yellow (Weakness!)
 		"resist":
 			damage_label.modulate = Color("#94a3b8") # Muted Grey (Resisted)
+		"gate_damage":
+			damage_label.modulate = Color("#ef4444") # Bright Red (Gate Damage!)
 		_:
 			damage_label.modulate = Color("#ffffff") # Normal White
 			

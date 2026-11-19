@@ -1,7 +1,7 @@
 class_name CombatArena
 extends Node2D
 
-enum UIState { IDLE, PICK_HUNTER, PICK_MONSTER, CINEMATIC }
+enum UIState { IDLE, PICK_HUNTER, PICK_MONSTER, CINEMATIC, GAME_OVER }
 enum PendingOrder { NONE, OFFENSE, RETREAT, TARGET }
 
 @onready var camera: Camera2D = $Camera2D
@@ -20,6 +20,7 @@ enum PendingOrder { NONE, OFFENSE, RETREAT, TARGET }
 @onready var world_dark_overlay: ColorRect = $WorldDarkOverlay
 @onready var monsters_container: Node2D = $Entities/Monsters
 @onready var spawn_point: Marker2D = get_node_or_null("SpawnPoint")
+@onready var guild_gate: GuildGate = get_tree().get_first_node_in_group("guild_gate") if is_inside_tree() else null
 
 # HUD Overlay & Containers
 @onready var input_blocker: ColorRect = $HUD/UIRoot/DarkOverlay
@@ -31,6 +32,12 @@ enum PendingOrder { NONE, OFFENSE, RETREAT, TARGET }
 @onready var squad_portraits_container: HBoxContainer = $HUD/UIRoot/TopLeft/SquadPortraits
 @onready var monster_cards_container: HBoxContainer = $HUD/UIRoot/TopRight/MonsterCardsContainer
 @onready var skills_bar_container: HBoxContainer = $HUD/UIRoot/BottomRight/SkillsBar
+
+# Gate HUD & Defeat Overlay (using get_node_or_null for safety)
+@onready var gate_label: Label = get_node_or_null("HUD/UIRoot/TopCenter/GateStatus/GateLabel")
+@onready var gate_health_bar: ProgressBar = get_node_or_null("HUD/UIRoot/TopCenter/GateStatus/GateHealthBar")
+@onready var defeat_panel: Panel = get_node_or_null("HUD/UIRoot/DefeatPanel")
+@onready var btn_retry: Button = get_node_or_null("HUD/UIRoot/DefeatPanel/VBoxContainer/BtnRetry")
 
 @onready var btn_offense: Button = $HUD/UIRoot/BottomLeft/CommandBar/BtnOffense
 @onready var btn_retreat: Button = $HUD/UIRoot/BottomLeft/CommandBar/BtnRetreat
@@ -59,6 +66,9 @@ const DIMMED_COLOR: Color = Color(0.3, 0.3, 0.3, 1.0)
 const BRIGHT_COLOR: Color = Color(1.0, 1.0, 1.0, 1.0)
 
 func _ready() -> void:
+	Engine.time_scale = 1.0
+	
+	# 1. Register Hunters & Monsters
 	for node in get_tree().get_nodes_in_group("hunters"):
 		if node is Hunter:
 			active_hunters.append(node)
@@ -67,6 +77,19 @@ func _ready() -> void:
 		if node is Monster:
 			register_monster(node)
 			
+	# 2. Setup Guild Gate & HUD Health Bar
+	guild_gate = get_tree().get_first_node_in_group("guild_gate") as GuildGate
+	if is_instance_valid(guild_gate):
+		guild_gate.health_changed.connect(_on_gate_health_changed)
+		guild_gate.gate_destroyed.connect(_on_gate_destroyed)
+		_on_gate_health_changed(guild_gate.current_health, guild_gate.max_health)
+		
+	if defeat_panel:
+		defeat_panel.visible = false
+	if btn_retry:
+		btn_retry.pressed.connect(_on_retry_pressed)
+			
+	# 3. Connect Hunter Portraits & Skill Buttons
 	for child in squad_portraits_container.get_children():
 		if child is HunterPortrait:
 			active_portraits.append(child)
@@ -79,12 +102,14 @@ func _ready() -> void:
 			if child is SkillButton:
 				child.skill_button_clicked.connect(_on_skill_button_clicked)
 			
+	# 4. Connect Command Buttons & EventBus
 	btn_offense.pressed.connect(_on_btn_offense_pressed)
 	btn_retreat.pressed.connect(_on_btn_retreat_pressed)
 	btn_target.pressed.connect(_on_btn_target_pressed)
 	btn_cancel.pressed.connect(cancel_command_mode)
 	
 	EventBus.damage_text_requested.connect(_on_damage_text_requested)
+	EventBus.camera_shake_requested.connect(_on_camera_shake_requested)
 	
 	reset_ui_to_idle()
 	var half_width: float = get_half_visible_world_width()
@@ -94,6 +119,38 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	sort_monster_cards_by_distance()
 	refresh_all_target_badges()
+
+# ==============================================================================
+# GUILD GATE HUD & DEFEAT LOGIC
+# ==============================================================================
+
+func _on_gate_health_changed(current_hp: float, max_hp: float) -> void:
+	if gate_health_bar:
+		gate_health_bar.max_value = max_hp
+		gate_health_bar.value = current_hp
+		
+		# Flash the HUD bar red briefly so player notices off-screen Gate attacks!
+		if current_hp < max_hp:
+			gate_health_bar.modulate = Color(2.5, 0.4, 0.4)
+			var tween: Tween = create_tween()
+			tween.set_ignore_time_scale(true)
+			tween.tween_property(gate_health_bar, "modulate", Color(1.0, 1.0, 1.0), 0.25)
+			
+	if gate_label:
+		gate_label.text = "GUILD GATE: %d / %d" % [roundi(current_hp), roundi(max_hp)]
+
+func _on_gate_destroyed() -> void:
+	reset_ui_to_idle()
+	ui_state = UIState.GAME_OVER
+	Engine.time_scale = 0.0 # Dramatic freeze on defeat
+	
+	if defeat_panel:
+		defeat_panel.visible = true
+
+func _on_retry_pressed() -> void:
+	# CRITICAL: Always restore time_scale to 1.0 before reloading!
+	Engine.time_scale = 1.0
+	get_tree().reload_current_scene()
 
 # ==============================================================================
 # MONSTER SPAWNING SYSTEM
@@ -136,15 +193,12 @@ func trigger_hunter_skill(hunter: Hunter) -> bool:
 	if not hunter.can_use_active_skill():
 		return false
 		
-	# 1. Lock hunter and start skill cooldown immediately
 	hunter.prepare_active_skill()
 	
-	# 2. Play MUGEN Super Freeze Cut-In if enabled on this skill!
 	if hunter.data.active_skill.play_cut_in:
 		await play_skill_cut_in(hunter)
 		
-	# 3. Unleash the actual special move!
-	if is_instance_valid(hunter):
+	if is_instance_valid(hunter) and ui_state != UIState.GAME_OVER:
 		hunter.execute_prepared_skill()
 	return true
 
@@ -155,28 +209,22 @@ func play_skill_cut_in(hunter: Hunter) -> void:
 	if camera_focus_tween and camera_focus_tween.is_valid():
 		camera_focus_tween.kill()
 		
-	# Save original camera view before zooming in
 	var original_cam_pos: Vector2 = camera.position
 	var original_cam_zoom: Vector2 = camera.zoom
 	
-	# 1. TOTAL SUPER FREEZE & SPOTLIGHT
-	Engine.time_scale = 0.0 # World freezes completely!
+	Engine.time_scale = 0.0
 	input_blocker.visible = true
 	
-	# Dim HUD corners slightly so screen focuses on the hunter
 	top_left_hud.modulate = DIMMED_COLOR
 	top_right_hud.modulate = DIMMED_COLOR
 	bottom_left_hud.modulate = DIMMED_COLOR
 	bottom_right_hud.modulate = DIMMED_COLOR
 	
-	# Pop hunter strictly above the dark curtain
 	hunter.set_highlight(true)
 	
-	# Calculate hunter's torso height for dramatic zoom framing
 	var half_h: float = hunter.sprite.texture.get_height() * 0.5 if hunter.sprite.texture else 180.0
 	var zoom_target_pos: Vector2 = Vector2(hunter.global_position.x, hunter.global_position.y - half_h)
 	
-	# Fade darkness IN + Zoom Camera IN (All ignoring time_scale = 0.0!)
 	world_dark_overlay.modulate.a = 0.0
 	world_dark_overlay.visible = true
 	
@@ -188,24 +236,19 @@ func play_skill_cut_in(hunter: Hunter) -> void:
 	
 	await tween_in.finished
 	
-	# 2. THE CLASSIC MUGEN FLASH & HERO PULSE
 	if is_instance_valid(hunter):
 		var f_scale: float = hunter.get_facing_scale_x()
-		hunter.sprite.modulate = Color(4.5, 4.5, 4.5) # Blinding flash!
-		
+		hunter.sprite.modulate = Color(4.5, 4.5, 4.5)
 		var tween_flash: Tween = create_tween().set_parallel(true)
 		tween_flash.set_ignore_time_scale(true)
 		tween_flash.tween_property(hunter.sprite, "modulate", Color(1.0, 1.0, 1.0), 0.25)
 		tween_flash.tween_property(hunter.visual_root, "scale", Vector2(1.14 * f_scale, 1.14), 0.1)
 		tween_flash.chain().tween_property(hunter.visual_root, "scale", Vector2(1.0 * f_scale, 1.0), 0.14)
 	
-	# Hold dramatic hero freeze frame (using ignore_time_scale = true in create_timer!)
 	await get_tree().create_timer(0.32, true, false, true).timeout
 	
-	# 3. SNAP BACK OUT & UNFREEZE
 	var target_out_x: float = original_cam_pos.x
 	if is_instance_valid(hunter):
-		# Keep camera centered around the action X clamped cleanly inside the lane
 		var half_w: float = get_viewport_rect().size.x / (2.0 * original_cam_zoom.x)
 		target_out_x = clampf(hunter.global_position.x, half_w, max(half_w, lane_total_width - half_w))
 		
@@ -217,10 +260,8 @@ func play_skill_cut_in(hunter: Hunter) -> void:
 	
 	await tween_out.finished
 	
-	# Clean restoration before skill executes
 	if is_instance_valid(hunter):
 		hunter.set_highlight(false)
-		
 	bottom_left_hud.modulate = BRIGHT_COLOR
 	reset_ui_to_idle()
 
@@ -426,25 +467,25 @@ func clear_monster_preview() -> void:
 			card.set_preview_selected(false)
 
 func _on_hunter_portrait_hovered(hunter: Hunter) -> void:
-	if ui_state == UIState.PICK_MONSTER or ui_state == UIState.CINEMATIC:
+	if ui_state == UIState.PICK_MONSTER or ui_state == UIState.CINEMATIC or ui_state == UIState.GAME_OVER:
 		return
 	if is_instance_valid(hunter):
 		hunter.set_highlight(true)
 
 func _on_hunter_portrait_unhovered(hunter: Hunter) -> void:
-	if ui_state == UIState.CINEMATIC:
+	if ui_state == UIState.CINEMATIC or ui_state == UIState.GAME_OVER:
 		return
 	if is_instance_valid(hunter) and hunter != previewed_hunter:
 		hunter.set_highlight(false)
 
 func _on_monster_card_hovered(monster: Monster) -> void:
-	if ui_state == UIState.PICK_HUNTER or ui_state == UIState.CINEMATIC:
+	if ui_state == UIState.PICK_HUNTER or ui_state == UIState.CINEMATIC or ui_state == UIState.GAME_OVER:
 		return
 	if is_instance_valid(monster):
 		monster.set_highlight(true)
 
 func _on_monster_card_unhovered(monster: Monster) -> void:
-	if ui_state == UIState.CINEMATIC:
+	if ui_state == UIState.CINEMATIC or ui_state == UIState.GAME_OVER:
 		return
 	if is_instance_valid(monster) and monster != previewed_monster:
 		monster.set_highlight(false)
@@ -468,7 +509,7 @@ func _input(event: InputEvent) -> void:
 		if is_drag_button(event.button_index):
 			is_dragging_camera = false
 	elif event is InputEventMouseMotion and is_dragging_camera:
-		if not is_any_drag_button_held():
+		if not is_any_drag_button_held() or ui_state != UIState.IDLE:
 			is_dragging_camera = false
 			return
 		var mouse_delta: Vector2 = event.position - drag_start_mouse_pos
@@ -560,3 +601,11 @@ func _on_damage_text_requested(world_pos: Vector2, damage_info: Dictionary) -> v
 	add_child(text_node)
 	text_node.global_position = world_pos
 	text_node.setup_and_play(damage_info)
+
+func _on_camera_shake_requested(intensity: float, duration: float) -> void:
+	var shake_tween: Tween = create_tween()
+	var steps: int = max(1, int(duration / 0.04))
+	for i in range(steps):
+		var rand_offset := Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+		shake_tween.tween_property(camera, "offset", rand_offset, 0.04)
+	shake_tween.tween_property(camera, "offset", Vector2.ZERO, 0.04)

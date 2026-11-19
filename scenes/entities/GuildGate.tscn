@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://c7u8j7ppvuicr"]
+
+[ext_resource type="Script" uid="uid://3dach7d7ldcv" path="res://scenes/entities/GuildGate.gd" id="1_lj5fq"]
+
+[node name="GuildGate" type="Node2D" unique_id=1258742643 groups=["guild_gate"]]
+script = ExtResource("1_lj5fq")
+
+[node name="VisualRoot" type="Node2D" parent="." unique_id=492334989]
+
+[node name="GateBody" type="ColorRect" parent="VisualRoot" unique_id=1356251767]
+offset_left = -60.0
+offset_top = -800.0
+offset_right = 60.0
+color = Color(0.2784314, 0.33333334, 0.4117647, 1)

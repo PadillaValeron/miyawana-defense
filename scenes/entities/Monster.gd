@@ -1,7 +1,6 @@
 class_name Monster
 extends Node2D
 
-# Updated English role names
 enum Role { INVADER, TARGETER, RUSHER, APEX }
 enum State { IDLE_WALK, ATTACKING, ACTING, STUNNED, DEAD }
 
@@ -15,23 +14,22 @@ signal died(monster: Monster)
 @onready var sprite: Sprite2D = $VisualRoot/MonsterSprite
 @onready var highlight_marker: Label = $HighlightMarker
 
-# Runtime Stats
 var max_health: float = 300.0
 var current_health: float = 300.0
 var current_attack: float = 20.0
 var current_state: State = State.IDLE_WALK
 var facing_direction: int = -1
 
-# AI & Targeting
 var current_target: Node2D = null
 var attack_timer: float = 0.0
 var target_reevaluate_timer: float = 0.0
-const GATE_X_POSITION: float = 140.0
 var range_variance: float = 0.0
+
+const FALLBACK_GATE_X: float = 140.0
+const MAX_ARENA_X: float = 2900.0
 
 var unlocked_specials: Array[MonsterAttackData] = []
 var special_cooldowns: Dictionary = {}
-
 var walk_tween: Tween
 
 func _ready() -> void:
@@ -41,6 +39,15 @@ func _ready() -> void:
 	setup_monster_stats()
 	setup_visuals()
 	start_walking_animation()
+
+func get_left_arena_limit() -> float:
+	var gate: GuildGate = get_tree().get_first_node_in_group("guild_gate") as GuildGate
+	if is_instance_valid(gate):
+		return gate.get_front_wall_x() + 35.0
+	return FALLBACK_GATE_X + 35.0
+
+func clamp_x_to_arena(target_x: float) -> float:
+	return clampf(target_x, get_left_arena_limit(), MAX_ARENA_X)
 
 func setup_monster_stats() -> void:
 	var is_apex: bool = (role == Role.APEX)
@@ -55,7 +62,6 @@ func setup_monster_stats() -> void:
 			special_cooldowns[attack] = 0.0
 
 func setup_visuals() -> void:
-	# Make shader material unique per monster instance so hovering one doesn't highlight all!
 	if sprite.material:
 		sprite.material = sprite.material.duplicate()
 		
@@ -77,21 +83,15 @@ func setup_visuals() -> void:
 func set_highlight(active: bool) -> void:
 	if current_state == State.DEAD:
 		active = false
-		
 	if highlight_marker:
 		highlight_marker.visible = active
-		
-	# 1. Bring hovered monster strictly in front of overlapping monsters
 	z_index = 50 if active else 0
-	
-	# 2. Toggle bright red outline shader
 	if sprite.material is ShaderMaterial:
 		sprite.material.set_shader_parameter("outline_width", 6.0 if active else 0.0)
 
 func _physics_process(delta: float) -> void:
 	if current_state == State.DEAD or not data:
 		return
-		
 	if attack_timer > 0.0:
 		attack_timer -= delta
 	if target_reevaluate_timer > 0.0:
@@ -102,6 +102,9 @@ func _physics_process(delta: float) -> void:
 			
 	if current_state == State.IDLE_WALK:
 		handle_role_ai(delta)
+		
+	# HARD WALL CLAMP: Monsters can never be knocked behind the Guild Gate or off-screen!
+	position.x = clamp_x_to_arena(position.x)
 
 func handle_role_ai(delta: float) -> void:
 	match role:
@@ -109,7 +112,7 @@ func handle_role_ai(delta: float) -> void:
 			approach_and_attack_gate(delta)
 		Role.INVADER:
 			var hunter: Hunter = find_closest_standing_hunter()
-			if is_instance_valid(hunter) and abs(hunter.global_position.x - global_position.x) <= 300.0:
+			if is_instance_valid(hunter) and abs(hunter.global_position.x - global_position.x) <= 350.0:
 				engage_hunter(hunter, delta)
 			else:
 				approach_and_attack_gate(delta)
@@ -136,6 +139,12 @@ func engage_hunter(hunter: Hunter, delta: float) -> void:
 	
 	var effective_range: float = max(35.0, data.attack_range + range_variance)
 	if dist > effective_range:
+		if attack_timer <= 0.0:
+			if try_special_attack_only(hunter, dist):
+				return
+			else:
+				attack_timer = 1.0
+				
 		position.x += data.move_speed * dir * delta
 		resume_walking_animation_if_needed()
 	else:
@@ -146,14 +155,27 @@ func approach_and_attack_gate(delta: float) -> void:
 	current_target = null
 	set_facing_direction(-1)
 	
+	var gate: GuildGate = get_tree().get_first_node_in_group("guild_gate") as GuildGate
+	if is_instance_valid(gate) and gate.is_destroyed:
+		stop_walking_animation()
+		return
+		
+	var gate_wall_x: float = gate.get_front_wall_x() if is_instance_valid(gate) else FALLBACK_GATE_X
 	var effective_range: float = max(35.0, data.attack_range + range_variance)
-	var dist_to_gate: float = abs(global_position.x - GATE_X_POSITION)
-	if global_position.x > GATE_X_POSITION + effective_range:
+	var dist_to_gate: float = abs(global_position.x - gate_wall_x)
+	
+	if global_position.x > gate_wall_x + effective_range:
+		if attack_timer <= 0.0 and is_instance_valid(gate):
+			if try_special_attack_only(gate, dist_to_gate):
+				return
+			else:
+				attack_timer = 1.0
+				
 		position.x -= data.move_speed * delta
 		resume_walking_animation_if_needed()
 	else:
 		stop_walking_animation()
-		try_attack(null, dist_to_gate)
+		try_attack(gate, dist_to_gate)
 
 func find_closest_standing_hunter() -> Hunter:
 	var hunters = get_tree().get_nodes_in_group("hunters")
@@ -176,18 +198,26 @@ func find_random_standing_hunter() -> Hunter:
 		return null
 	return standing.pick_random()
 
-func try_attack(target_node: Node2D, distance: float) -> void:
-	if attack_timer > 0.0:
-		return
-		
-	for special in unlocked_specials:
+func try_special_attack_only(target_node: Node2D, distance: float) -> bool:
+	if unlocked_specials.is_empty():
+		return false
+	var shuffled_specials: Array[MonsterAttackData] = unlocked_specials.duplicate()
+	shuffled_specials.shuffle()
+	
+	for special in shuffled_specials:
 		if special_cooldowns[special] <= 0.0 and distance >= special.min_range and distance <= special.max_range:
 			if randf() <= special.trigger_chance:
 				special_cooldowns[special] = special.cooldown
 				attack_timer = data.attack_cooldown
 				special.execute(self, target_node)
-				return
-				
+				return true
+	return false
+
+func try_attack(target_node: Node2D, distance: float) -> void:
+	if attack_timer > 0.0:
+		return
+	if try_special_attack_only(target_node, distance):
+		return
 	perform_basic_attack(target_node)
 
 func perform_basic_attack(target_node: Node2D) -> void:
@@ -196,10 +226,8 @@ func perform_basic_attack(target_node: Node2D) -> void:
 	
 	var f_scale: float = get_facing_scale_x()
 	var tween: Tween = create_tween()
-	
 	tween.tween_property(visual_root, "position:x", -10.0 * facing_direction, 0.15).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(visual_root, "scale", Vector2(1.15 * f_scale, 0.85), 0.15)
-	
 	tween.chain().tween_property(visual_root, "position:x", 18.0 * facing_direction, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.parallel().tween_property(visual_root, "scale", Vector2(0.85 * f_scale, 1.25), 0.1)
 	
@@ -207,13 +235,14 @@ func perform_basic_attack(target_node: Node2D) -> void:
 	if current_state == State.DEAD:
 		return
 		
-	if is_instance_valid(target_node) and target_node is Hunter:
-		var is_launch: bool = (role == Role.APEX and randf() < 0.35)
-		var kb: float = 160.0 if is_launch else data.basic_knockback
-		target_node.receive_hit(current_attack, kb, global_position.x, is_launch, 130.0)
-	elif target_node == null:
-		print("[GATE UNDER ATTACK!] ", data.monster_name, " hit the Guild Gate for ", current_attack, " dmg!")
-		
+	if is_instance_valid(target_node):
+		if target_node is Hunter:
+			var is_launch: bool = (role == Role.APEX and randf() < 0.25)
+			var kb: float = 160.0 if is_launch else data.basic_knockback
+			target_node.receive_hit(current_attack, kb, global_position.x, is_launch, 130.0)
+		elif target_node is GuildGate:
+			target_node.receive_hit(current_attack)
+			
 	var tween_rec: Tween = create_tween().set_parallel(true)
 	tween_rec.tween_property(visual_root, "position:x", 0.0, 0.2)
 	tween_rec.tween_property(visual_root, "scale", Vector2(1.0 * f_scale, 1.0), 0.2)
@@ -230,13 +259,18 @@ func receive_hit(damage_info: Dictionary, knockback_force: float = 0.0, attacker
 	current_health = max(0.0, current_health - total_damage)
 	health_changed.emit(current_health, max_health)
 	
-	# Request floating damage text cleanly at monster's upper body/head height
-	var sprite_height: float = float(data.texture_idle.get_height()) if data.texture_idle else 250.0
+	var sprite_height: float = data.texture_idle.get_height() if data.texture_idle else 250.0
 	var spawn_pos: Vector2 = global_position + Vector2(0.0, -sprite_height * scale.y * 0.75)
 	EventBus.damage_text_requested.emit(spawn_pos, damage_info)
 	
 	if current_health <= 0.0:
 		die()
+		return
+		
+	if current_state == State.ACTING:
+		sprite.modulate = Color(3.0, 3.0, 3.0)
+		var flash_tween: Tween = create_tween()
+		flash_tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0), 0.12)
 		return
 		
 	if data.texture_hit:
@@ -252,7 +286,7 @@ func receive_hit(damage_info: Dictionary, knockback_force: float = 0.0, attacker
 	tween.parallel().tween_property(visual_root, "rotation_degrees", 6.0 * push_dir, 0.08)
 	
 	if knockback_force > 0.0:
-		var target_x: float = position.x + (push_dir * knockback_force)
+		var target_x: float = clamp_x_to_arena(position.x + (push_dir * knockback_force))
 		tween.parallel().tween_property(self, "position:x", target_x, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		
 	tween.tween_property(visual_root, "scale", Vector2(1.0 * f_scale, 1.0), 0.12)
@@ -265,12 +299,12 @@ func receive_hit(damage_info: Dictionary, knockback_force: float = 0.0, attacker
 func die() -> void:
 	if current_state == State.DEAD:
 		return
-		
 	current_state = State.DEAD
 	set_highlight(false)
 	remove_from_group("monsters")
 	died.emit(self)
 	stop_walking_animation()
+	visual_root.position.y = 0.0
 	
 	if data.texture_hit:
 		sprite.texture = data.texture_hit
