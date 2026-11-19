@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="MonsterData" format=3 uid="uid://1xlxec85vfqm"]
 
 [ext_resource type="Texture2D" uid="uid://b4ksf5eja000c" path="res://assets/sprites/monsters/dummy/dummy_idle.png" id="1_08o2h"]
+[ext_resource type="Script" uid="uid://4oxrw72xic71" path="res://scripts/resources/monster_attacks/apex_attacks/MassiveTackleGateAttack.gd" id="1_26i1u"]
 [ext_resource type="Script" uid="uid://j00rkahcjxh1" path="res://scripts/resources/MonsterData.gd" id="1_tps3q"]
 [ext_resource type="Script" uid="uid://c7evfqj7g2fes" path="res://scripts/resources/MonsterAttackData.gd" id="2_ert2c"]
 [ext_resource type="Script" uid="uid://d13mxst8a7fxx" path="res://scripts/resources/monster_attacks/MonsterJumpSlamAttack.gd" id="4_5b00l"]
@@ -9,13 +10,16 @@
 [ext_resource type="Script" uid="uid://da1b0sr17bx2p" path="res://scripts/resources/monster_attacks/MonsterProjectileAttack.gd" id="5_htrto"]
 [ext_resource type="Script" uid="uid://btlmjf8rn4xwl" path="res://scripts/resources/monster_attacks/MonsterTackleAttack.gd" id="6_26i1u"]
 
+[sub_resource type="Resource" id="Resource_u1yet"]
+script = ExtResource("1_26i1u")
+charge_distance_from_gate = 2000.0
+trigger_interval = 4.0
+charge_duration = 6.0
+damage_multiplier = 1.0
+metadata/_custom_type_script = "uid://4oxrw72xic71"
+
 [sub_resource type="Resource" id="Resource_68buf"]
 script = ExtResource("4_5b00l")
-jump_height = 300.0
-aoe_radius = 500.0
-is_apex_only = true
-trigger_chance = 1.0
-max_range = 500.0
 metadata/_custom_type_script = "uid://d13mxst8a7fxx"
 
 [sub_resource type="Resource" id="Resource_fijo5"]
@@ -31,7 +35,7 @@ metadata/_custom_type_script = "uid://btlmjf8rn4xwl"
 [resource]
 script = ExtResource("1_tps3q")
 icon_portrait = ExtResource("1_08o2h")
-max_health = 2000.0
+max_health = 7000.0
 move_speed = 700.0
 attack_range = 300.0
 res_slash = 1.5
@@ -40,5 +44,6 @@ texture_idle = ExtResource("1_08o2h")
 texture_hit = ExtResource("4_8cxi1")
 texture_stunned = ExtResource("4_8cxi1")
 sprite_faces_right_by_default = false
+apex_gate_attack = SubResource("Resource_u1yet")
 special_attacks = Array[ExtResource("2_ert2c")]([SubResource("Resource_68buf"), SubResource("Resource_fijo5"), SubResource("Resource_4djk0")])
 metadata/_custom_type_script = "uid://j00rkahcjxh1"

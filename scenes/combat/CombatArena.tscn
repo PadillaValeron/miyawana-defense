@@ -78,10 +78,15 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="DarkOverlay" type="ColorRect" parent="HUD/UIRoot" unique_id=439663015]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -3000.0
+offset_top = -2500.0
+offset_right = 5220.0
+offset_bottom = 3280.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0)
@@ -246,6 +251,14 @@ text = "DEFEAT - THE GUILD GATE HAS FALLEN!"
 layout_mode = 2
 text = "RETRY BATTLE"
 flat = true
+
+[node name="BossWarningIndicator" type="Panel" parent="HUD/UIRoot" unique_id=895626509]
+visible = false
+z_index = 30
+layout_mode = 0
+offset_right = 150.0
+offset_bottom = 44.0
+mouse_filter = 2
 
 [node name="SpawnPoint" type="Marker2D" parent="." unique_id=1971449733]
 position = Vector2(4128, 911)

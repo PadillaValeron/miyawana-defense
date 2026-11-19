@@ -19,11 +19,20 @@ var current_health: float = 300.0
 var current_attack: float = 20.0
 var current_state: State = State.IDLE_WALK
 var facing_direction: int = -1
+var is_invincible: bool = false
 
 var current_target: Node2D = null
 var attack_timer: float = 0.0
 var target_reevaluate_timer: float = 0.0
+var gate_attack_timer: float = 0.0
+var stun_timer: float = 0.0
 var range_variance: float = 0.0
+
+# Gate Attack Charge & Interruption tracking
+var is_charging_gate_attack: bool = false
+var charge_was_interrupted: bool = false
+var active_gate_attack: GateAttackData = null
+var charge_damage_accumulated: float = 0.0
 
 const FALLBACK_GATE_X: float = 140.0
 const MAX_ARENA_X: float = 2900.0
@@ -31,6 +40,7 @@ const MAX_ARENA_X: float = 2900.0
 var unlocked_specials: Array[MonsterAttackData] = []
 var special_cooldowns: Dictionary = {}
 var walk_tween: Tween
+var stun_tween: Tween
 
 func _ready() -> void:
 	if not data:
@@ -55,6 +65,9 @@ func setup_monster_stats() -> void:
 	current_health = max_health
 	current_attack = data.base_attack * (data.apex_attack_multiplier if is_apex else 1.0)
 	
+	if is_apex and data.apex_gate_attack:
+		gate_attack_timer = data.apex_gate_attack.trigger_interval
+		
 	unlocked_specials.clear()
 	for attack in data.special_attacks:
 		if attack and (is_apex or not attack.is_apex_only):
@@ -92,6 +105,15 @@ func set_highlight(active: bool) -> void:
 func _physics_process(delta: float) -> void:
 	if current_state == State.DEAD or not data:
 		return
+		
+	# Handle STUNNED state countdown cleanly
+	if current_state == State.STUNNED:
+		stun_timer -= delta
+		if stun_timer <= 0.0:
+			exit_stun()
+		position.x = clamp_x_to_arena(position.x)
+		return
+		
 	if attack_timer > 0.0:
 		attack_timer -= delta
 	if target_reevaluate_timer > 0.0:
@@ -100,11 +122,112 @@ func _physics_process(delta: float) -> void:
 		if special_cooldowns[special] > 0.0:
 			special_cooldowns[special] -= delta
 			
+	if role == Role.APEX and data.apex_gate_attack and current_state != State.ACTING:
+		if gate_attack_timer > 0.0:
+			gate_attack_timer -= delta
+			
 	if current_state == State.IDLE_WALK:
+		if role == Role.APEX and data.apex_gate_attack and gate_attack_timer <= 0.0:
+			var gate: GuildGate = get_tree().get_first_node_in_group("guild_gate") as GuildGate
+			if is_instance_valid(gate) and not gate.is_destroyed:
+				gate_attack_timer = data.apex_gate_attack.trigger_interval
+				data.apex_gate_attack.execute(self)
+				return
+				
 		handle_role_ai(delta)
 		
-	# HARD WALL CLAMP: Monsters can never be knocked behind the Guild Gate or off-screen!
 	position.x = clamp_x_to_arena(position.x)
+
+# ==============================================================================
+# GATE ATTACK CHARGE, INTERRUPTION & GUARANTEED STUN
+# ==============================================================================
+
+func start_gate_charge(attack: GateAttackData) -> void:
+	active_gate_attack = attack
+	is_charging_gate_attack = true
+	charge_was_interrupted = false
+	charge_damage_accumulated = 0.0
+	EventBus.boss_warning_changed.emit(self, true)
+
+func finish_gate_charge_success() -> void:
+	is_charging_gate_attack = false
+	active_gate_attack = null
+	EventBus.boss_warning_changed.emit(self, false)
+
+func trigger_gate_attack_interrupt() -> void:
+	is_charging_gate_attack = false
+	charge_was_interrupted = true
+	EventBus.boss_warning_changed.emit(self, false)
+	
+	# Spawn bright cyan "INTERRUPTED!" banner above the monster
+	var sprite_height: float = data.texture_idle.get_height() if data.texture_idle else 250.0
+	var spawn_pos: Vector2 = global_position + Vector2(0.0, -sprite_height * scale.y * 0.95)
+	EventBus.damage_text_requested.emit(spawn_pos, {
+		"custom_text": "INTERRUPTED!",
+		"effectiveness": "interrupted"
+	})
+	EventBus.camera_shake_requested.emit(12.0, 0.2)
+	
+	var attack_to_break: GateAttackData = active_gate_attack
+	active_gate_attack = null
+	if attack_to_break:
+		attack_to_break.on_interrupted(self)
+
+func enter_stun(duration: float) -> void:
+	if current_state == State.DEAD:
+		return
+		
+	current_state = State.STUNNED
+	stun_timer = max(stun_timer, duration)
+	is_invincible = false
+	stop_walking_animation()
+	
+	if stun_tween and stun_tween.is_valid():
+		stun_tween.kill()
+		
+	# Swap to stunned sprite (or fall back to hurt sprite)
+	if data.texture_stunned:
+		sprite.texture = data.texture_stunned
+	elif data.texture_hit:
+		sprite.texture = data.texture_hit
+		
+	var f_scale: float = get_facing_scale_x()
+	visual_root.position.x = 0.0
+	visual_root.position.y = 0.0
+	sprite.modulate = Color(1.0, 1.0, 1.0)
+	
+	# Initial heavy stagger backward + slumped dizzy sway loop!
+	stun_tween = create_tween()
+	stun_tween.tween_property(visual_root, "scale", Vector2(1.2 * f_scale, 0.8), 0.12)
+	stun_tween.parallel().tween_property(visual_root, "rotation_degrees", 16.0 * -facing_direction, 0.12)
+	stun_tween.tween_property(visual_root, "scale", Vector2(1.08 * f_scale, 0.9), 0.2)
+	stun_tween.parallel().tween_property(visual_root, "rotation_degrees", 0.0, 0.2)
+	
+	await stun_tween.finished
+	if current_state == State.STUNNED:
+		stun_tween = create_tween().set_loops()
+		stun_tween.tween_property(visual_root, "rotation_degrees", 6.0, 0.35).set_trans(Tween.TRANS_SINE)
+		stun_tween.tween_property(visual_root, "rotation_degrees", -6.0, 0.35).set_trans(Tween.TRANS_SINE)
+
+func exit_stun() -> void:
+	if current_state == State.DEAD:
+		return
+	if stun_tween and stun_tween.is_valid():
+		stun_tween.kill()
+		
+	var f_scale: float = get_facing_scale_x()
+	visual_root.rotation_degrees = 0.0
+	visual_root.scale = Vector2(f_scale, 1.0)
+	sprite.modulate = Color(1.0, 1.0, 1.0)
+	if data.texture_idle:
+		sprite.texture = data.texture_idle
+		
+	current_state = State.IDLE_WALK
+	start_walking_animation()
+
+# ==============================================================================
+# ROLE-BASED AI LOGIC
+# ==============================================================================
 
 func handle_role_ai(delta: float) -> void:
 	match role:
@@ -144,7 +267,6 @@ func engage_hunter(hunter: Hunter, delta: float) -> void:
 				return
 			else:
 				attack_timer = 1.0
-				
 		position.x += data.move_speed * dir * delta
 		resume_walking_animation_if_needed()
 	else:
@@ -170,7 +292,6 @@ func approach_and_attack_gate(delta: float) -> void:
 				return
 			else:
 				attack_timer = 1.0
-				
 		position.x -= data.move_speed * delta
 		resume_walking_animation_if_needed()
 	else:
@@ -232,7 +353,7 @@ func perform_basic_attack(target_node: Node2D) -> void:
 	tween.parallel().tween_property(visual_root, "scale", Vector2(0.85 * f_scale, 1.25), 0.1)
 	
 	await tween.finished
-	if current_state == State.DEAD:
+	if current_state == State.DEAD or current_state == State.STUNNED:
 		return
 		
 	if is_instance_valid(target_node):
@@ -251,8 +372,12 @@ func perform_basic_attack(target_node: Node2D) -> void:
 	if current_state == State.ATTACKING:
 		current_state = State.IDLE_WALK
 
+# ==============================================================================
+# RECEIVING DAMAGE, CHARGE THRESHOLD & DEATH
+# ==============================================================================
+
 func receive_hit(damage_info: Dictionary, knockback_force: float = 0.0, attacker_global_x: float = 0.0) -> void:
-	if current_state == State.DEAD:
+	if current_state == State.DEAD or is_invincible:
 		return
 		
 	var total_damage: float = damage_info.get("total", 0.0)
@@ -264,10 +389,19 @@ func receive_hit(damage_info: Dictionary, knockback_force: float = 0.0, attacker
 	EventBus.damage_text_requested.emit(spawn_pos, damage_info)
 	
 	if current_health <= 0.0:
+		is_charging_gate_attack = false
 		die()
 		return
 		
-	if current_state == State.ACTING:
+	# INTERRUPT CHECK: Accumulate damage if charging a Gate Attack!
+	if is_charging_gate_attack and active_gate_attack:
+		charge_damage_accumulated += total_damage
+		if charge_damage_accumulated >= active_gate_attack.damage_threshold_to_interrupt:
+			trigger_gate_attack_interrupt()
+			return
+		
+	# SUPER ARMOR / STUNNED STATE: Flash white, ignore knockback interruptions
+	if current_state == State.ACTING or current_state == State.STUNNED:
 		sprite.modulate = Color(3.0, 3.0, 3.0)
 		var flash_tween: Tween = create_tween()
 		flash_tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0), 0.12)
@@ -293,17 +427,23 @@ func receive_hit(damage_info: Dictionary, knockback_force: float = 0.0, attacker
 	tween.parallel().tween_property(visual_root, "rotation_degrees", 0.0, 0.12)
 	
 	await tween.finished
-	if current_state != State.DEAD and data.texture_idle:
+	if current_state != State.DEAD and current_state != State.STUNNED and data.texture_idle:
 		sprite.texture = data.texture_idle
 
 func die() -> void:
 	if current_state == State.DEAD:
 		return
 	current_state = State.DEAD
+	is_invincible = false
+	is_charging_gate_attack = false
+	active_gate_attack = null
 	set_highlight(false)
+	EventBus.boss_warning_changed.emit(self, false)
 	remove_from_group("monsters")
 	died.emit(self)
 	stop_walking_animation()
+	if stun_tween and stun_tween.is_valid():
+		stun_tween.kill()
 	visual_root.position.y = 0.0
 	
 	if data.texture_hit:

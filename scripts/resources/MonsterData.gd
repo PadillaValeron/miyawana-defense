@@ -15,7 +15,6 @@ extends Resource
 @export var basic_knockback: float = 25.0
 
 @export_group("Physical Resistances (Multipliers)")
-## >1.0 = Weak (Yellow numbers), <1.0 = Resistant (Grey numbers)
 @export var res_slash: float = 1.0
 @export var res_blunt: float = 1.0
 @export var res_pierce: float = 1.0
@@ -33,15 +32,16 @@ extends Resource
 @export var texture_stunned: Texture2D
 @export var sprite_faces_right_by_default: bool = true
 
-@export_group("Apex Modifiers")
+@export_group("Apex Modifiers & Gate Event")
 @export var apex_scale_multiplier: float = 1.4
 @export var apex_health_multiplier: float = 2.5
 @export var apex_attack_multiplier: float = 1.5
+## Scheduled Gate Attack event unlocked exclusively by Apex monsters
+@export var apex_gate_attack: GateAttackData
 
-@export_group("Special Moves")
+@export_group("Combat Special Moves (RNG)")
 @export var special_attacks: Array[MonsterAttackData] = []
 
-## Clean lookup helpers for DamageCalculator
 func get_physical_resistance(dmg_type: WeaponData.DamageType) -> float:
 	match dmg_type:
 		WeaponData.DamageType.SLASH:  return res_slash

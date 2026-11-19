@@ -20,7 +20,7 @@ enum PendingOrder { NONE, OFFENSE, RETREAT, TARGET }
 @onready var world_dark_overlay: ColorRect = $WorldDarkOverlay
 @onready var monsters_container: Node2D = $Entities/Monsters
 @onready var spawn_point: Marker2D = get_node_or_null("SpawnPoint")
-@onready var guild_gate: GuildGate = get_tree().get_first_node_in_group("guild_gate") if is_inside_tree() else null
+@onready var guild_gate: GuildGate = null
 
 # HUD Overlay & Containers
 @onready var input_blocker: ColorRect = $HUD/UIRoot/DarkOverlay
@@ -33,27 +33,32 @@ enum PendingOrder { NONE, OFFENSE, RETREAT, TARGET }
 @onready var monster_cards_container: HBoxContainer = $HUD/UIRoot/TopRight/MonsterCardsContainer
 @onready var skills_bar_container: HBoxContainer = $HUD/UIRoot/BottomRight/SkillsBar
 
-# Gate HUD & Defeat Overlay (using get_node_or_null for safety)
+# Gate HUD, Warning & Defeat Overlay
 @onready var gate_label: Label = get_node_or_null("HUD/UIRoot/TopCenter/GateStatus/GateLabel")
 @onready var gate_health_bar: ProgressBar = get_node_or_null("HUD/UIRoot/TopCenter/GateStatus/GateHealthBar")
 @onready var defeat_panel: Panel = get_node_or_null("HUD/UIRoot/DefeatPanel")
 @onready var btn_retry: Button = get_node_or_null("HUD/UIRoot/DefeatPanel/VBoxContainer/BtnRetry")
+@onready var boss_warning_indicator: Panel = get_node_or_null("HUD/UIRoot/BossWarningIndicator")
+@onready var boss_warning_label: Label = get_node_or_null("HUD/UIRoot/BossWarningIndicator/WarningLabel")
 
 @onready var btn_offense: Button = $HUD/UIRoot/BottomLeft/CommandBar/BtnOffense
 @onready var btn_retreat: Button = $HUD/UIRoot/BottomLeft/CommandBar/BtnRetreat
 @onready var btn_target: Button = $HUD/UIRoot/BottomLeft/CommandBar/BtnTarget
 @onready var btn_cancel: Button = $HUD/UIRoot/BottomLeft/CommandBar/BtnCancel
 
-# Camera dragging
+# Camera dragging & cinematic state
 var is_dragging_camera: bool = false
 var drag_start_mouse_pos: Vector2 = Vector2.ZERO
 var drag_start_camera_pos: Vector2 = Vector2.ZERO
 var camera_focus_tween: Tween
+var boss_cam_saved_pos: Vector2 = Vector2.ZERO
+var boss_cam_saved_zoom: Vector2 = Vector2(0.5, 0.5)
 
 # Combat & Director state
 var active_hunters: Array[Hunter] = []
 var active_portraits: Array[HunterPortrait] = []
 var active_monster_cards: Array[MonsterCard] = []
+var warning_monsters: Array[Monster] = []
 
 var ui_state: UIState = UIState.IDLE
 var pending_order: PendingOrder = PendingOrder.NONE
@@ -67,8 +72,8 @@ const BRIGHT_COLOR: Color = Color(1.0, 1.0, 1.0, 1.0)
 
 func _ready() -> void:
 	Engine.time_scale = 1.0
+	add_to_group("combat_arena")
 	
-	# 1. Register Hunters & Monsters
 	for node in get_tree().get_nodes_in_group("hunters"):
 		if node is Hunter:
 			active_hunters.append(node)
@@ -77,7 +82,6 @@ func _ready() -> void:
 		if node is Monster:
 			register_monster(node)
 			
-	# 2. Setup Guild Gate & HUD Health Bar
 	guild_gate = get_tree().get_first_node_in_group("guild_gate") as GuildGate
 	if is_instance_valid(guild_gate):
 		guild_gate.health_changed.connect(_on_gate_health_changed)
@@ -88,8 +92,9 @@ func _ready() -> void:
 		defeat_panel.visible = false
 	if btn_retry:
 		btn_retry.pressed.connect(_on_retry_pressed)
+	if boss_warning_indicator:
+		boss_warning_indicator.visible = false
 			
-	# 3. Connect Hunter Portraits & Skill Buttons
 	for child in squad_portraits_container.get_children():
 		if child is HunterPortrait:
 			active_portraits.append(child)
@@ -102,7 +107,6 @@ func _ready() -> void:
 			if child is SkillButton:
 				child.skill_button_clicked.connect(_on_skill_button_clicked)
 			
-	# 4. Connect Command Buttons & EventBus
 	btn_offense.pressed.connect(_on_btn_offense_pressed)
 	btn_retreat.pressed.connect(_on_btn_retreat_pressed)
 	btn_target.pressed.connect(_on_btn_target_pressed)
@@ -110,6 +114,7 @@ func _ready() -> void:
 	
 	EventBus.damage_text_requested.connect(_on_damage_text_requested)
 	EventBus.camera_shake_requested.connect(_on_camera_shake_requested)
+	EventBus.boss_warning_changed.connect(_on_boss_warning_changed)
 	
 	reset_ui_to_idle()
 	var half_width: float = get_half_visible_world_width()
@@ -119,6 +124,128 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	sort_monster_cards_by_distance()
 	refresh_all_target_badges()
+	update_offscreen_boss_warning()
+
+# ==============================================================================
+# OFF-SCREEN BOSS WARNING TELEGRAPH (!!)
+# ==============================================================================
+
+func _on_boss_warning_changed(monster: Node2D, is_warning: bool) -> void:
+	if monster is Monster:
+		if is_warning and not warning_monsters.has(monster):
+			warning_monsters.append(monster)
+		elif not is_warning:
+			warning_monsters.erase(monster)
+
+func update_offscreen_boss_warning() -> void:
+	if not boss_warning_indicator:
+		return
+		
+	warning_monsters = warning_monsters.filter(func(m): return is_instance_valid(m) and m.current_state != Monster.State.DEAD)
+	if warning_monsters.is_empty() or ui_state == UIState.CINEMATIC or ui_state == UIState.GAME_OVER:
+		boss_warning_indicator.visible = false
+		return
+		
+	var boss: Monster = warning_monsters[0]
+	# Converts world coordinates cleanly into current 1280x720 screen space!
+	var screen_pos: Vector2 = boss.get_global_transform_with_canvas().origin
+	var view_size: Vector2 = get_viewport_rect().size
+	
+	if screen_pos.x > view_size.x:
+		# Off-screen to the RIGHT
+		boss_warning_indicator.visible = true
+		boss_warning_indicator.position.x = view_size.x - boss_warning_indicator.size.x - 16.0
+		boss_warning_indicator.position.y = clampf(screen_pos.y - 160.0, 90.0, view_size.y - 110.0)
+		if boss_warning_label:
+			boss_warning_label.text = "!! APEX >>"
+	elif screen_pos.x < 0.0:
+		# Off-screen to the LEFT
+		boss_warning_indicator.visible = true
+		boss_warning_indicator.position.x = 16.0
+		boss_warning_indicator.position.y = clampf(screen_pos.y - 160.0, 90.0, view_size.y - 110.0)
+		if boss_warning_label:
+			boss_warning_label.text = "<< APEX !!"
+	else:
+		# Already visible inside viewport
+		boss_warning_indicator.visible = false
+		
+	# Urgent blinking effect
+	if boss_warning_indicator.visible:
+		var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.015)
+		boss_warning_indicator.modulate.a = lerpf(0.45, 1.0, pulse)
+
+# ==============================================================================
+# BOSS MASSIVE ATTACK CINEMATIC (SUPER FREEZE & 0.32x ZOOM OUT)
+# ==============================================================================
+
+func begin_boss_massive_cinematic(boss: Monster, gate: GuildGate) -> void:
+	# Clean up any active Bullet-Time or camera pans cleanly
+	reset_ui_to_idle()
+	ui_state = UIState.CINEMATIC
+	is_dragging_camera = false
+	
+	if camera_focus_tween and camera_focus_tween.is_valid():
+		camera_focus_tween.kill()
+		
+	boss_cam_saved_pos = camera.position
+	boss_cam_saved_zoom = camera.zoom
+	
+	Engine.time_scale = 0.0
+	input_blocker.visible = true
+	
+	top_left_hud.modulate = DIMMED_COLOR
+	top_right_hud.modulate = DIMMED_COLOR
+	bottom_left_hud.modulate = DIMMED_COLOR
+	bottom_right_hud.modulate = DIMMED_COLOR
+	
+	# Spotlight BOTH the Boss AND the Guild Gate above the dark curtain!
+	boss.set_highlight(true)
+	if is_instance_valid(gate):
+		gate.z_index = 50
+		
+	# Zoom OUT to 0.32 centered cleanly between Gate and Boss!
+	var gate_x: float = gate.get_front_wall_x() if is_instance_valid(gate) else 140.0
+	var midpoint_x: float = (gate_x + boss.global_position.x) * 0.5
+	var center_y: float = boss.global_position.y - 220.0
+	
+	world_dark_overlay.modulate.a = 0.0
+	world_dark_overlay.visible = true
+	
+	var tween_in: Tween = create_tween().set_parallel(true)
+	tween_in.set_ignore_time_scale(true)
+	tween_in.tween_property(world_dark_overlay, "modulate:a", 1.25, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween_in.tween_property(camera, "position", Vector2(midpoint_x, center_y), 0.22).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	tween_in.tween_property(camera, "zoom", Vector2(0.32, 0.32), 0.22).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	await tween_in.finished
+	
+	# Dramatic crimson MUGEN boss flash!
+	if is_instance_valid(boss):
+		boss.sprite.modulate = Color(5.0, 1.2, 1.5)
+		var f_tween: Tween = create_tween()
+		f_tween.set_ignore_time_scale(true)
+		f_tween.tween_property(boss.sprite, "modulate", Color(1.4, 0.8, 0.9), 0.22)
+		
+	await get_tree().create_timer(0.28, true, false, true).timeout
+
+func end_boss_massive_cinematic(boss: Monster, gate: GuildGate) -> void:
+	if is_instance_valid(boss):
+		boss.set_highlight(false)
+	if is_instance_valid(gate):
+		gate.z_index = 0
+		
+	if ui_state != UIState.GAME_OVER:
+		reset_ui_to_idle()
+		
+		# Smoothly zoom camera back to normal 0.5x around the Gate impact while darkness clears
+		var half_w: float = get_viewport_rect().size.x / (2.0 * boss_cam_saved_zoom.x)
+		var return_x: float = clampf(boss_cam_saved_pos.x, half_w, max(half_w, lane_total_width - half_w))
+		
+		if camera_focus_tween and camera_focus_tween.is_valid():
+			camera_focus_tween.kill()
+		camera_focus_tween = create_tween().set_parallel(true)
+		camera_focus_tween.set_ignore_time_scale(true)
+		camera_focus_tween.tween_property(camera, "position", Vector2(return_x, boss_cam_saved_pos.y), 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		camera_focus_tween.tween_property(camera, "zoom", boss_cam_saved_zoom, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 # ==============================================================================
 # GUILD GATE HUD & DEFEAT LOGIC
@@ -128,27 +255,24 @@ func _on_gate_health_changed(current_hp: float, max_hp: float) -> void:
 	if gate_health_bar:
 		gate_health_bar.max_value = max_hp
 		gate_health_bar.value = current_hp
-		
-		# Flash the HUD bar red briefly so player notices off-screen Gate attacks!
 		if current_hp < max_hp:
 			gate_health_bar.modulate = Color(2.5, 0.4, 0.4)
 			var tween: Tween = create_tween()
 			tween.set_ignore_time_scale(true)
 			tween.tween_property(gate_health_bar, "modulate", Color(1.0, 1.0, 1.0), 0.25)
-			
 	if gate_label:
 		gate_label.text = "GUILD GATE: %d / %d" % [roundi(current_hp), roundi(max_hp)]
 
 func _on_gate_destroyed() -> void:
+	if camera_focus_tween and camera_focus_tween.is_valid():
+		camera_focus_tween.kill()
 	reset_ui_to_idle()
 	ui_state = UIState.GAME_OVER
-	Engine.time_scale = 0.0 # Dramatic freeze on defeat
-	
+	Engine.time_scale = 0.0
 	if defeat_panel:
 		defeat_panel.visible = true
 
 func _on_retry_pressed() -> void:
-	# CRITICAL: Always restore time_scale to 1.0 before reloading!
 	Engine.time_scale = 1.0
 	get_tree().reload_current_scene()
 
@@ -192,12 +316,9 @@ func trigger_hunter_skill(hunter: Hunter) -> bool:
 		return false
 	if not hunter.can_use_active_skill():
 		return false
-		
 	hunter.prepare_active_skill()
-	
 	if hunter.data.active_skill.play_cut_in:
 		await play_skill_cut_in(hunter)
-		
 	if is_instance_valid(hunter) and ui_state != UIState.GAME_OVER:
 		hunter.execute_prepared_skill()
 	return true
@@ -205,13 +326,11 @@ func trigger_hunter_skill(hunter: Hunter) -> bool:
 func play_skill_cut_in(hunter: Hunter) -> void:
 	ui_state = UIState.CINEMATIC
 	is_dragging_camera = false
-	
 	if camera_focus_tween and camera_focus_tween.is_valid():
 		camera_focus_tween.kill()
 		
 	var original_cam_pos: Vector2 = camera.position
 	var original_cam_zoom: Vector2 = camera.zoom
-	
 	Engine.time_scale = 0.0
 	input_blocker.visible = true
 	
@@ -221,7 +340,6 @@ func play_skill_cut_in(hunter: Hunter) -> void:
 	bottom_right_hud.modulate = DIMMED_COLOR
 	
 	hunter.set_highlight(true)
-	
 	var half_h: float = hunter.sprite.texture.get_height() * 0.5 if hunter.sprite.texture else 180.0
 	var zoom_target_pos: Vector2 = Vector2(hunter.global_position.x, hunter.global_position.y - half_h)
 	
@@ -233,7 +351,6 @@ func play_skill_cut_in(hunter: Hunter) -> void:
 	tween_in.tween_property(world_dark_overlay, "modulate:a", 1.2, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween_in.tween_property(camera, "position", zoom_target_pos, 0.18).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	tween_in.tween_property(camera, "zoom", Vector2(0.92, 0.92), 0.18).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	
 	await tween_in.finished
 	
 	if is_instance_valid(hunter):
@@ -257,7 +374,6 @@ func play_skill_cut_in(hunter: Hunter) -> void:
 	tween_out.tween_property(world_dark_overlay, "modulate:a", 0.0, 0.16)
 	tween_out.tween_property(camera, "position", Vector2(target_out_x, original_cam_pos.y), 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween_out.tween_property(camera, "zoom", original_cam_zoom, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	
 	await tween_out.finished
 	
 	if is_instance_valid(hunter):
@@ -360,10 +476,8 @@ func enter_pick_hunter_mode(order: PendingOrder) -> void:
 func enter_pick_monster_mode() -> void:
 	ui_state = UIState.PICK_MONSTER
 	clear_monster_preview()
-	
 	top_left_hud.modulate = DIMMED_COLOR
 	top_right_hud.modulate = BRIGHT_COLOR
-	
 	btn_target.disabled = true
 	btn_target.modulate = DIMMED_COLOR
 	btn_target.text = "🎯 TARGET"
@@ -401,6 +515,8 @@ func cancel_command_mode() -> void:
 	reset_ui_to_idle()
 
 func reset_ui_to_idle() -> void:
+	if ui_state == UIState.GAME_OVER:
+		return
 	ui_state = UIState.IDLE
 	pending_order = PendingOrder.NONE
 	pending_hunter = null
@@ -604,6 +720,7 @@ func _on_damage_text_requested(world_pos: Vector2, damage_info: Dictionary) -> v
 
 func _on_camera_shake_requested(intensity: float, duration: float) -> void:
 	var shake_tween: Tween = create_tween()
+	shake_tween.set_ignore_time_scale(true)
 	var steps: int = max(1, int(duration / 0.04))
 	for i in range(steps):
 		var rand_offset := Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
